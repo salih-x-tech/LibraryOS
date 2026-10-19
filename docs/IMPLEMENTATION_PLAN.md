@@ -250,7 +250,8 @@ Atlas connectivity/credentials and production deployment were not exercised or p
   - [x] 3.3b Credential/limiter/session/audit login and logout service orchestration.
   - [ ] 3.3c Pre-authentication CSRF/bootstrap, reviewed runtime configuration and thin API handlers.
     - [x] 3.3c.1 Purpose-bound pre-login/logout CSRF challenge primitives and tests.
-    - [ ] 3.3c.2 Local HTTPS runtime, explicit auth deployment/configuration and API handlers.
+    - [x] 3.3c.2 Local HTTPS launcher/setup and configuration validation.
+    - [ ] 3.3c.3 Explicit auth deployment/readiness and API handlers.
   - [ ] 3.3d Accessible browser login/logout flow and end-to-end security checks.
 - [ ] 3.4 Add approved activation/recovery with development delivery.
 - [ ] 3.5 Add own-profile edits and authentication security review.
@@ -751,3 +752,11 @@ The user additionally approved local HTTPS on loopback first for API/browser int
 Added src/server/security/auth-csrf.ts and tests/unit/auth-csrf.test.ts. Uses a separate purpose/Origin-bound pre-session challenge rather than forging SessionPrincipal. Logout tokens also bind the actual auth cookie, allowing reviewed logout handling for inactive/expired account contexts without account access. No endpoint, cookie setter or application environment change is enabled yet.
 
 Validation: lint, strict TypeScript and all 102 unit tests passed; a final focused four-test run passed after explicitly bounding nonce length. Cases cover replicated key behavior, cookie flags, nonce secrecy, absent/different cookies, foreign Origin, content type, signature/purpose/session mismatch and protocol expiry. Database/browser suites were not repeated because no persistence or endpoint changed. No Atlas writes or requirement changes occurred. Commit this security slice locally and continue to 3.3c.2 local HTTPS/configuration/API integration.
+
+### Task 3.3c.2 implementation evidence
+
+Added scripts/setup-local-auth.ts, scripts/dev-https.ts, src/server/auth-config.ts and tests/unit/auth-config.test.ts. Added auth:local:setup/dev:https commands and ignored .local/. Generated local-only certificate/key and private auth settings through the authorized setup, preserving .env.local. Next dev generated AGENTS.md; read its bundled-framework-documentation instruction and relevant local guide, and include this generated project instruction file in the checkpoint.
+
+Validation: lint and strict TypeScript passed; all 104 unit tests passed. Local setup passed twice (repeat preserves existing files). The Windows bundled OpenSSL initially hit a sandbox named-object permission error; the same setup passed with permitted execution outside that sandbox, without weakening certificate validation. The HTTPS launcher served the public root at https://127.0.0.1:3000; a Node HTTPS request trusting only this generated certificate returned 200 and the expected title. The temporary dev server was stopped afterward. Ignored-file checks confirmed both certificate files and .env.auth.local are excluded. No generated private material is staged or printed.
+
+No auth API, schema deployment, real account or Atlas operation occurred. No dependency changed. Commit this local runtime slice, then continue with 3.3c.3 explicit auth readiness/deployment and thin handlers. Hosted ingress remains unapproved and rejected by this configuration.

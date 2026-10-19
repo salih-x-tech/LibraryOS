@@ -1,6 +1,6 @@
 # LibraryOS implementation roadmap
 
-Status: **Phases 1–2 and Phase 3 Tasks 3.1–3.2 implementation are complete**. Task 3.3 and later work retain applicable approval gates. Infrastructure is validated on disposable MongoDB; Atlas schema deployment has not been performed. Git policy: the user authorizes a local commit after each completed task. Checkpoint `0c582d6` includes previously completed work; pushing still requires explicit approval.
+Status: **Phases 1–2 and Phase 3 Tasks 3.1–3.2/3.3a implementation are complete**. Task 3.3 remains open for service/API/browser orchestration. Scoped login/session policy was approved; other applicable gates remain. Infrastructure is validated on disposable MongoDB; Atlas schema deployment has not been performed. The user authorizes local commits after completed tasks and continuation; pushing still requires explicit approval.
 
 ## Sources and technical review
 
@@ -221,7 +221,7 @@ Atlas connectivity/credentials and production deployment were not exercised or p
 
 **Required folders and files:** `src/modules/auth/{user-model,session-model,identity-token-model,validation,passwords,sessions,service}.ts`, `src/server/security/{csrf,rate-limit}.ts`, `src/app/api/v1/auth/**/route.ts`, `src/app/api/v1/me/route.ts`, `src/app/(auth)/`, `tests/integration/auth/`, `tests/e2e/auth.spec.ts`.
 
-**Dependencies:** Phase 2. Activation/password/session defaults **PENDING APPROVAL** D02. Authentication limiter storage, fail-closed behavior and initial thresholds were explicitly approved on October 19, 2026 and implemented in 3.2d; trusted ingress, other limits and registration availability remain **PENDING APPROVAL** D09. Incomplete flows stay disabled.
+**Dependencies:** Phase 2. Scoped active/verified login and session lifecycle policy were approved in Task 3.3a; password/activation/claiming details remain **PENDING APPROVAL** D02. Authentication limiter storage, fail-closed behavior and initial thresholds were approved in 3.2d. Public registration is explicitly disabled until later review; trusted ingress and other operational limits remain **PENDING APPROVAL** D09. Incomplete flows stay disabled.
 
 **Database models:** User, Session, IdentityToken; normalized email/token uniqueness and expiry indexes. Check expiry independently of TTL cleanup.
 
@@ -246,6 +246,10 @@ Atlas connectivity/credentials and production deployment were not exercised or p
   - [x] 3.2c Session-bound CSRF and trusted Origin validation with negative tests.
   - [x] 3.2d Approved MongoDB distributed limiter adapter/integration, storage/threshold/fail-closed tests (scoped D09 approval recorded).
 - [ ] 3.3 Add login/logout API and browser flow.
+  - [x] 3.3a Enforce the approved login/session policy, idle/absolute expiry, browser cap and rotation-safe family logout.
+  - [ ] 3.3b Credential/limiter/session/audit login and logout service orchestration.
+  - [ ] 3.3c Pre-authentication CSRF/bootstrap, reviewed runtime configuration and thin API handlers.
+  - [ ] 3.3d Accessible browser login/logout flow and end-to-end security checks.
 - [ ] 3.4 Add approved activation/recovery with development delivery.
 - [ ] 3.5 Add own-profile edits and authentication security review.
 
@@ -723,3 +727,11 @@ Added src/server/security/{rate-limit,rate-limit-contract}.ts, scripts/db/rate-l
 Validation: lint and strict TypeScript passed; all 96 unit tests passed. The complete real MongoDB suite passed 55 tests across seven files. The final focused nine-test limiter suite also passed after adding explicit store execution budgets. Tests use two independent connection pools sharing a disposable replica set, verify exact concurrent account/IP admissions, five completed failures, successful refunds/idempotence, the 30-attempt IP cap, registration/recovery separation, normalization, window reset before TTL cleanup, late success, strict deployment/validator checks, Retry-After and sanitized fail-closed storage errors. Production build passed with only existing public root/not-found routes. No browser suite was repeated because UI/routes are unchanged. SRS hash remains unchanged.
 
 Task 3.2 implementation is complete. Primitives remain unexposed pending Task 3.3 login/logout orchestration and review. Trusted ingress/IP extraction, public Origin/key provisioning, other rate limits and operational deployment remain scoped D09 gates; activation/session/password policy remains D02. No Atlas schema changes or actual account mutations were performed. User authorizes a local commit after this completed task; no push is authorized. Next is Task 3.3, subject to its remaining explicit policy approvals.
+
+### Task 3.3a implementation evidence — October 19, 2026
+
+Recorded the user's scoped D02 approval in SECURITY.md and implemented it in session-policy.ts, session-model.ts, session-service.ts and scripts/db/sessions.ts. Added browser-family/original-start/activity fields, bounded absolute/idle validity, a guarded three-browser cap with oldest-family eviction and rotation-safe family logout. Updated policy/storage/lifecycle tests and development/roadmap guidance. SRS is unchanged; public registration remains disabled.
+
+Validation: lint, strict TypeScript and all 97 unit tests passed. The full real MongoDB suite passed 62 tests across seven files. Final focused session suites passed all 25 tests after replacing deprecated Mongoose new with returnDocument:after. New tests cover active/verified-only eligibility, idle expiry without revival, activity refresh, absolute deadline preservation/clamping, logout through rotated tokens, logout/rotation races, parallel cap enforcement and eviction rollback. Older fixture records were updated to match required family/activity metadata. No UI/routes/dependencies changed, so no redundant browser/build run was added at this internal checkpoint. No Atlas writes or real account mutations occurred.
+
+Task 3.3a is complete and will be locally committed under the user's standing instruction; nothing is pushed. Continue with 3.3b credential/limiter/session/audit orchestration, then reviewed pre-auth CSRF/configuration/API/browser integration. Remaining password/activation/recovery and trusted-ingress decisions retain their scoped approval gates.

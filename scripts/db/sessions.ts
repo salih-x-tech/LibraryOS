@@ -1,21 +1,24 @@
 import { isDeepStrictEqual } from "node:util";
 import type { Connection, mongo } from "mongoose";
 import { TOKEN_HASH_PATTERN } from "../../src/modules/auth/session-format.ts";
+import { SESSION_LIFETIME_MS } from "../../src/modules/auth/session-policy.ts";
 
-export const sessionValidator: mongo.Document = { $jsonSchema: {
+export const sessionValidator: mongo.Document = { $and: [{ $jsonSchema: {
   bsonType: "object", additionalProperties: false,
-  required: ["_id", "tokenHash", "userId", "expiresAt", "sessionVersion", "createdAt", "updatedAt"],
+  required: ["_id", "tokenHash", "userId", "familyId", "startedAt", "lastSeenAt", "expiresAt", "sessionVersion", "createdAt", "updatedAt"],
   properties: {
     _id: { bsonType: "objectId" }, tokenHash: { bsonType: "string", pattern: TOKEN_HASH_PATTERN },
     userId: { bsonType: "objectId" }, expiresAt: { bsonType: "date" }, revokedAt: { bsonType: "date" },
+    familyId: { bsonType: "objectId" }, startedAt: { bsonType: "date" }, lastSeenAt: { bsonType: "date" },
     sessionVersion: { bsonType: ["int", "long", "double"], minimum: 0, maximum: Number.MAX_SAFE_INTEGER, multipleOf: 1 },
     createdAt: { bsonType: "date" }, updatedAt: { bsonType: "date" },
   },
-} };
+} }, { $expr: { $lte: ["$expiresAt", { $add: ["$startedAt", SESSION_LIFETIME_MS] }] } }] };
 
 const indexes: readonly mongo.IndexDescription[] = [
   { key: { tokenHash: 1 }, name: "session_token_unique", unique: true },
   { key: { userId: 1 }, name: "session_user" },
+  { key: { userId: 1, familyId: 1 }, name: "session_user_family" },
   { key: { expiresAt: 1 }, name: "session_expiry", expireAfterSeconds: 0 },
 ];
 

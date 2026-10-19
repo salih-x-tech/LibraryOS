@@ -5,6 +5,9 @@ import { TOKEN_HASH_PATTERN } from "./session-format";
 const schema = new Schema({
   tokenHash: { type: String, required: true, immutable: true, select: false, match: new RegExp(TOKEN_HASH_PATTERN) },
   userId: { type: Schema.Types.ObjectId, required: true, immutable: true },
+  familyId: { type: Schema.Types.ObjectId, required: true, immutable: true },
+  startedAt: { type: Date, required: true, immutable: true },
+  lastSeenAt: { type: Date, required: true },
   expiresAt: { type: Date, required: true },
   revokedAt: Date,
   sessionVersion: { type: Number, required: true, min: 0, validate: Number.isSafeInteger },

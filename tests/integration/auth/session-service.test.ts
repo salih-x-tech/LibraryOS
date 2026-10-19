@@ -10,6 +10,7 @@ import { createSessionService } from "@/modules/auth/session-service";
 import { createSessionCredential } from "@/modules/auth/sessions";
 import { runTransaction } from "@/server/db/transaction";
 import { createCsrfProtection } from "@/server/security/csrf";
+import { APPROVED_SESSION_POLICY, SESSION_IDLE_TIMEOUT_MS, SESSION_LIFETIME_MS } from "@/modules/auth/session-policy";
 
 let fixture: Awaited<ReturnType<typeof startIsolatedDatabase>>;
 let passwordHash: string;
@@ -36,6 +37,77 @@ async function setup() {
 }
 
 describe("current-user session lifecycle", () => {
+  it("enforces approved active/verified login state without exposing public registration", async () => {
+    const connection = await fixture.manager.get();
+    const service = createSessionService(connection, APPROVED_SESSION_POLICY);
+    await expect(runTransaction(connection, (context) => service.issue(context, identity, deadline()))).rejects.toMatchObject({ code: "UNAUTHENTICATED" });
+    await getUserModel(connection).updateOne({}, { $set: { status: "active" } });
+    const issued = await runTransaction(connection, (context) => service.issue(context, identity, deadline()));
+    expect(await service.resolve(issued.token)).toMatchObject(identity);
+    await getUserModel(connection).updateOne({}, { $unset: { verifiedAt: 1 } });
+    expect(await service.resolve(issued.token)).toBeNull();
+  });
+  it("expires idle browser sessions and never revives them on read or rotation", async () => {
+    const { service, connection, issued } = await setup();
+    const old = new Date(Date.now() - SESSION_IDLE_TIMEOUT_MS - 1000);
+    await connection.db!.collection("sessions").updateOne({}, { $set: { lastSeenAt: old } });
+    expect(await service.resolve(issued.token)).toBeNull();
+    await expect(runTransaction(connection, (context) => service.rotate(context, issued.token, deadline()))).rejects.toMatchObject({ code: "UNAUTHENTICATED" });
+    expect(await connection.db!.collection("sessions").findOne()).toMatchObject({ lastSeenAt: old });
+  });
+  it("caps absolute lifetime, updates activity and preserves the original deadline through rotation", async () => {
+    const connection = await fixture.manager.get();
+    const service = createSessionService(connection, policy);
+    const issued = await runTransaction(connection, (context) => service.issue(context, identity, new Date(Date.now() + SESSION_LIFETIME_MS * 2)));
+    const original = (await connection.db!.collection("sessions").findOne())!;
+    expect(original.expiresAt.getTime() - original.startedAt.getTime()).toBe(SESSION_LIFETIME_MS);
+    const earlierActivity = new Date(Date.now() - 60_000);
+    await connection.db!.collection("sessions").updateOne({}, { $set: { lastSeenAt: earlierActivity } });
+    await service.resolve(issued.token);
+    expect((await connection.db!.collection("sessions").findOne())!.lastSeenAt.getTime()).toBeGreaterThan(earlierActivity.getTime());
+    const rotated = await runTransaction(connection, (context) => service.rotate(context, issued.token, new Date(Date.now() + SESSION_LIFETIME_MS * 2)));
+    expect(rotated.expiresAt).toEqual(original.expiresAt);
+    const stored = (await connection.db!.collection("sessions").findOne({ revokedAt: { $exists: false } }))!;
+    expect(stored.familyId).toEqual(original.familyId);
+    expect(stored.startedAt).toEqual(original.startedAt);
+  });
+  it("logs out a browser family using an already-rotated token without logging out another browser", async () => {
+    const { service, connection, issued } = await setup();
+    const otherBrowser = await runTransaction(connection, (context) => service.issue(context, identity, deadline()));
+    const rotated = await runTransaction(connection, (context) => service.rotate(context, issued.token, deadline()));
+    await runTransaction(connection, (context) => service.revoke(context, issued.token));
+    expect(await service.resolve(rotated.token)).toBeNull();
+    expect(await service.resolve(otherBrowser.token)).toMatchObject(identity);
+  });
+  it("serializes logout against rotation so no replacement from that browser remains valid", async () => {
+    const { service, connection, issued } = await setup();
+    const [rotation, logout] = await Promise.allSettled([
+      runTransaction(connection, (context) => service.rotate(context, issued.token, deadline())),
+      runTransaction(connection, (context) => service.revoke(context, issued.token)),
+    ]);
+    expect(logout.status).toBe("fulfilled");
+    if (rotation.status === "fulfilled") expect(await service.resolve(rotation.value.token)).toBeNull();
+    expect(await service.resolve(issued.token)).toBeNull();
+  });
+  it("evicts the oldest browser on the fourth login and enforces the cap under parallel issuance", async () => {
+    const { service, connection, issued } = await setup();
+    // Give the first browser a strictly earlier start, independent of timer precision.
+    await connection.db!.collection("sessions").updateOne({}, { $set: { startedAt: new Date(Date.now() - 1000) } });
+    for (let index = 0; index < 3; index++) await runTransaction(connection, (context) => service.issue(context, identity, deadline()));
+    expect(await service.resolve(issued.token)).toBeNull();
+    await Promise.all(Array.from({ length: 4 }, () => runTransaction(connection, (context) => service.issue(context, identity, deadline()))));
+    expect(await getSessionModel(connection).countDocuments({ revokedAt: { $exists: false } })).toBe(3);
+  });
+  it("rolls back browser eviction if the new login transaction aborts", async () => {
+    const { service, connection, issued } = await setup();
+    for (let index = 0; index < 2; index++) await runTransaction(connection, (context) => service.issue(context, identity, deadline()));
+    await expect(runTransaction(connection, async (context) => {
+      await service.issue(context, identity, deadline());
+      throw new Error("synthetic abort after eviction");
+    })).rejects.toMatchObject({ code: "SERVICE_UNAVAILABLE" });
+    expect(await service.resolve(issued.token)).toMatchObject(identity);
+    expect(await getSessionModel(connection).countDocuments({ revokedAt: { $exists: false } })).toBe(3);
+  });
   it("binds CSRF checks to a freshly resolved session through rotation and revocation", async () => {
     const { connection, service, issued } = await setup();
     const origin = "https://libraryos.example";

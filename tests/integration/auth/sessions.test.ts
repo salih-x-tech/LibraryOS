@@ -18,7 +18,7 @@ describe("session storage", () => {
     const connection = await fixture.manager.get();
     const sessions = getSessionModel(connection);
     const credential = createSessionCredential();
-    const record = { tokenHash: credential.tokenHash, userId: new Types.ObjectId(), expiresAt: new Date(Date.now() + 60_000), sessionVersion: 0 };
+    const record = { tokenHash: credential.tokenHash, userId: new Types.ObjectId(), familyId: new Types.ObjectId(), startedAt: new Date(), lastSeenAt: new Date(), expiresAt: new Date(Date.now() + 60_000), sessionVersion: 0 };
     await sessions.create(record);
     expect(await sessions.findOne().lean()).not.toHaveProperty("tokenHash");
     const stored = await connection.db!.collection("sessions").findOne();
@@ -29,7 +29,7 @@ describe("session storage", () => {
   it("rejects raw tokens, authority fields, invalid counters and missing expiry", async () => {
     const connection = await fixture.manager.get();
     const credential = createSessionCredential();
-    const record = { tokenHash: credential.tokenHash, userId: new Types.ObjectId(), expiresAt: new Date(Date.now() + 60_000), sessionVersion: 0, createdAt: new Date(), updatedAt: new Date() };
+    const record = { tokenHash: credential.tokenHash, userId: new Types.ObjectId(), familyId: new Types.ObjectId(), startedAt: new Date(), lastSeenAt: new Date(), expiresAt: new Date(Date.now() + 60_000), sessionVersion: 0, createdAt: new Date(), updatedAt: new Date() };
     await expect(connection.db!.collection("sessions").insertOne({ ...record, token: credential.token })).rejects.toMatchObject({ code: 121 });
     await expect(connection.db!.collection("sessions").insertOne({ ...record, role: "Owner" })).rejects.toMatchObject({ code: 121 });
     await expect(connection.db!.collection("sessions").insertOne({ ...record, sessionVersion: -1 })).rejects.toMatchObject({ code: 121 });

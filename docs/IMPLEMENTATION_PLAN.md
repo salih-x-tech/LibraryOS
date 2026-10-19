@@ -1,6 +1,6 @@
 # LibraryOS implementation roadmap
 
-Status: **Phases 1–2 and Phase 3 Tasks 3.1–3.2/3.3a implementation are complete**. Task 3.3 remains open for service/API/browser orchestration. Scoped login/session policy was approved; other applicable gates remain. Infrastructure is validated on disposable MongoDB; Atlas schema deployment has not been performed. The user authorizes local commits after completed tasks and continuation; pushing still requires explicit approval.
+Status: **Phases 1–2 and Phase 3 Tasks 3.1–3.2/3.3a–3.3b implementation are complete**. Task 3.3 remains open for local HTTPS/API/browser integration. Scoped login/session policy and local HTTPS on loopback were approved; hosted ingress remains gated. Infrastructure is validated on disposable MongoDB; Atlas schema deployment has not been performed. The user authorizes local commits after completed tasks and continuation; pushing still requires explicit approval.
 
 ## Sources and technical review
 
@@ -247,7 +247,7 @@ Atlas connectivity/credentials and production deployment were not exercised or p
   - [x] 3.2d Approved MongoDB distributed limiter adapter/integration, storage/threshold/fail-closed tests (scoped D09 approval recorded).
 - [ ] 3.3 Add login/logout API and browser flow.
   - [x] 3.3a Enforce the approved login/session policy, idle/absolute expiry, browser cap and rotation-safe family logout.
-  - [ ] 3.3b Credential/limiter/session/audit login and logout service orchestration.
+  - [x] 3.3b Credential/limiter/session/audit login and logout service orchestration.
   - [ ] 3.3c Pre-authentication CSRF/bootstrap, reviewed runtime configuration and thin API handlers.
   - [ ] 3.3d Accessible browser login/logout flow and end-to-end security checks.
 - [ ] 3.4 Add approved activation/recovery with development delivery.
@@ -735,3 +735,11 @@ Recorded the user's scoped D02 approval in SECURITY.md and implemented it in ses
 Validation: lint, strict TypeScript and all 97 unit tests passed. The full real MongoDB suite passed 62 tests across seven files. Final focused session suites passed all 25 tests after replacing deprecated Mongoose new with returnDocument:after. New tests cover active/verified-only eligibility, idle expiry without revival, activity refresh, absolute deadline preservation/clamping, logout through rotated tokens, logout/rotation races, parallel cap enforcement and eviction rollback. Older fixture records were updated to match required family/activity metadata. No UI/routes/dependencies changed, so no redundant browser/build run was added at this internal checkpoint. No Atlas writes or real account mutations occurred.
 
 Task 3.3a is complete and will be locally committed under the user's standing instruction; nothing is pushed. Continue with 3.3b credential/limiter/session/audit orchestration, then reviewed pre-auth CSRF/configuration/API/browser integration. Remaining password/activation/recovery and trusted-ingress decisions retain their scoped approval gates.
+
+### Task 3.3b implementation evidence
+
+Added src/modules/auth/service.ts with exact credential DTO validation, pre-KDF shared admission, native dummy verification for unknown users, approved state eligibility, post-verification snapshot checks and atomic session/audit orchestration. Logout atomically revokes a browser family and audits once. Updated validation.ts, the pure password-format constant/re-export and the internal session issuance result to expose familyId for audit use. Added tests/integration/auth/service.test.ts and extended unit request validation coverage.
+
+Validation: lint and strict TypeScript passed; all 98 unit tests and all 76 real MongoDB integration tests across eight files passed. Fourteen new service cases cover generic unknown/wrong/suspended/unverified failures with native verification, failed-attempt admission before a sixth KDF, successful refunds/cap enforcement, privilege injection, a reset/version change between verification and issuance, login/logout audit rollback, idempotent/rotated logout and unavailable limiter behavior. Test credentials and databases are synthetic/disposable. No UI/routes/dependencies changed; the previous production build remains the latest browser/runtime evidence, not a claim that a login endpoint exists yet.
+
+The user additionally approved local HTTPS on loopback first for API/browser integration. Hosted trusted-IP extraction remains pending. Public registration remains disabled. SRS is unchanged; no Atlas writes or real accounts were used. Commit this completed task locally, then continue with 3.3c pre-auth CSRF, local runtime/deployment configuration and thin handlers. Nothing is pushed.

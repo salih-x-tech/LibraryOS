@@ -81,7 +81,7 @@ export function createSessionService(connection: Connection, policy: SessionPoli
       tokenHash: credential.tokenHash, userId: identifier(identity.userId), sessionVersion: identity.sessionVersion, expiresAt: deadline,
       familyId, startedAt, lastSeenAt: new Date(),
     }], { session: context.session });
-    return { token: credential.token, expiresAt: deadline };
+    return { token: credential.token, expiresAt: deadline, familyId: familyId.toHexString() };
   }
 
   // Only call after credentials are verified. Identity/version inputs come from

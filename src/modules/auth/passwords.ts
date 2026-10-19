@@ -1,7 +1,7 @@
 import "server-only";
 import * as argon2 from "argon2";
 import { ApplicationError, FieldValidationError } from "../../server/http/errors.ts";
-import { isSupportedPasswordHash } from "./password-format.ts";
+import { isSupportedPasswordHash, MAX_PASSWORD_BYTES } from "./password-format.ts";
 
 export const PASSWORD_HASH_OPTIONS = Object.freeze({
   type: argon2.argon2id, version: 0x13, memoryCost: 65_536,
@@ -9,7 +9,7 @@ export const PASSWORD_HASH_OPTIONS = Object.freeze({
 });
 
 // Infrastructure input bound, not the still-unapproved user password policy.
-export const MAX_PASSWORD_BYTES = 4096;
+export { MAX_PASSWORD_BYTES } from "./password-format.ts";
 
 function validInput(password: string): boolean {
   return typeof password === "string" && password.length > 0 && password.isWellFormed()

@@ -249,6 +249,8 @@ Atlas connectivity/credentials and production deployment were not exercised or p
   - [x] 3.3a Enforce the approved login/session policy, idle/absolute expiry, browser cap and rotation-safe family logout.
   - [x] 3.3b Credential/limiter/session/audit login and logout service orchestration.
   - [ ] 3.3c Pre-authentication CSRF/bootstrap, reviewed runtime configuration and thin API handlers.
+    - [x] 3.3c.1 Purpose-bound pre-login/logout CSRF challenge primitives and tests.
+    - [ ] 3.3c.2 Local HTTPS runtime, explicit auth deployment/configuration and API handlers.
   - [ ] 3.3d Accessible browser login/logout flow and end-to-end security checks.
 - [ ] 3.4 Add approved activation/recovery with development delivery.
 - [ ] 3.5 Add own-profile edits and authentication security review.
@@ -743,3 +745,9 @@ Added src/modules/auth/service.ts with exact credential DTO validation, pre-KDF 
 Validation: lint and strict TypeScript passed; all 98 unit tests and all 76 real MongoDB integration tests across eight files passed. Fourteen new service cases cover generic unknown/wrong/suspended/unverified failures with native verification, failed-attempt admission before a sixth KDF, successful refunds/cap enforcement, privilege injection, a reset/version change between verification and issuance, login/logout audit rollback, idempotent/rotated logout and unavailable limiter behavior. Test credentials and databases are synthetic/disposable. No UI/routes/dependencies changed; the previous production build remains the latest browser/runtime evidence, not a claim that a login endpoint exists yet.
 
 The user additionally approved local HTTPS on loopback first for API/browser integration. Hosted trusted-IP extraction remains pending. Public registration remains disabled. SRS is unchanged; no Atlas writes or real accounts were used. Commit this completed task locally, then continue with 3.3c pre-auth CSRF, local runtime/deployment configuration and thin handlers. Nothing is pushed.
+
+### Task 3.3c.1 implementation evidence
+
+Added src/server/security/auth-csrf.ts and tests/unit/auth-csrf.test.ts. Uses a separate purpose/Origin-bound pre-session challenge rather than forging SessionPrincipal. Logout tokens also bind the actual auth cookie, allowing reviewed logout handling for inactive/expired account contexts without account access. No endpoint, cookie setter or application environment change is enabled yet.
+
+Validation: lint, strict TypeScript and all 102 unit tests passed; a final focused four-test run passed after explicitly bounding nonce length. Cases cover replicated key behavior, cookie flags, nonce secrecy, absent/different cookies, foreign Origin, content type, signature/purpose/session mismatch and protocol expiry. Database/browser suites were not repeated because no persistence or endpoint changed. No Atlas writes or requirement changes occurred. Commit this security slice locally and continue to 3.3c.2 local HTTPS/configuration/API integration.

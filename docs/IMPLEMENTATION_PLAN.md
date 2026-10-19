@@ -252,6 +252,8 @@ Atlas connectivity/credentials and production deployment were not exercised or p
     - [x] 3.3c.1 Purpose-bound pre-login/logout CSRF challenge primitives and tests.
     - [x] 3.3c.2 Local HTTPS launcher/setup and configuration validation.
     - [ ] 3.3c.3 Explicit auth deployment/readiness and API handlers.
+      - [x] 3.3c.3a Shared read-only identity/session storage contracts and readiness tests.
+      - [ ] 3.3c.3b Explicit auth deployment command, runtime initialization and thin API handlers.
   - [ ] 3.3d Accessible browser login/logout flow and end-to-end security checks.
 - [ ] 3.4 Add approved activation/recovery with development delivery.
 - [ ] 3.5 Add own-profile edits and authentication security review.
@@ -760,3 +762,9 @@ Added scripts/setup-local-auth.ts, scripts/dev-https.ts, src/server/auth-config.
 Validation: lint and strict TypeScript passed; all 104 unit tests passed. Local setup passed twice (repeat preserves existing files). The Windows bundled OpenSSL initially hit a sandbox named-object permission error; the same setup passed with permitted execution outside that sandbox, without weakening certificate validation. The HTTPS launcher served the public root at https://127.0.0.1:3000; a Node HTTPS request trusting only this generated certificate returned 200 and the expected title. The temporary dev server was stopped afterward. Ignored-file checks confirmed both certificate files and .env.auth.local are excluded. No generated private material is staged or printed.
 
 No auth API, schema deployment, real account or Atlas operation occurred. No dependency changed. Commit this local runtime slice, then continue with 3.3c.3 explicit auth readiness/deployment and thin handlers. Hosted ingress remains unapproved and rejected by this configuration.
+
+### Task 3.3c.3a implementation evidence
+
+Moved the existing identity/session validator and index contracts into src/modules/auth/identity-storage.ts and session-storage.ts. Deployment helpers reuse these contracts and retain their existing exports. New verifyUserIdentity/verifySessions functions inspect storage without creating collections, changing validators or repairing indexes; inspection commands have five-second timeouts. Runtime code can now verify these prerequisites without importing deployment scripts. This is a prerequisite slice; API handlers and the separate auth deployment command remain incomplete.
+
+Validation: lint and strict TypeScript passed. All 12 tests across identity storage, session storage and the new readiness suite passed against an owned disposable loopback MongoDB replica set. Readiness tests cover absent storage, unchanged valid definitions, weakened validation and missing uniqueness/TTL indexes. The sandbox prevented MongoDB startup; the same isolated tests passed outside the sandbox. No Atlas connection, real account, requirement change or push occurred. Local HTTPS on loopback remains the approved initial environment; hosted ingress is pending approval.

@@ -1,6 +1,6 @@
 # LibraryOS
 
-LibraryOS is a multi-tenant library management SaaS. The current implementation includes the Phase 1 runtime scaffold and Task 1.2 test-runner setup. Visual design and business modules follow in separate approved tasks.
+LibraryOS is a multi-tenant library management SaaS. Phases 1–2 implementation is complete: public shell, server/database infrastructure, scoped query primitives, transactional audit/outbox and durable idempotency. Authentication, library domain models and APIs follow in later approved phases. Atlas schema deployment has not been performed; see [database development](docs/DEVELOPMENT.md).
 
 ## Prerequisites
 
@@ -8,6 +8,8 @@ LibraryOS is a multi-tenant library management SaaS. The current implementation 
 - npm 11.16.0; supported project range: >=11.16.0 and <12.
 
 Use npm consistently so `package-lock.json` remains the single dependency lockfile. Direct versions are pinned. TypeScript 5.9.3 is intentionally used within the supported Next.js lint-toolchain range; the newest TypeScript major is not assumed compatible.
+
+A clean `npm ci --offline --no-audit --no-fund` was verified from the populated local npm cache during Phase 1 review. A machine without that cache needs ordinary network-enabled `npm ci`. Build environments need development dependencies (TypeScript, Tailwind/PostCSS); do not omit them before building.
 
 ## Local setup
 
@@ -18,7 +20,7 @@ npm ci
 npm run dev
 ```
 
-Open [localhost:3000](http://localhost:3000). Stop the foreground server with Ctrl+C. No environment variables, database, media account or email provider are required for this task. `.env.example` documents that boundary; future approved settings belong in untracked `.env.local`. Never store secrets in `NEXT_PUBLIC_` variables.
+Open [localhost:3000](http://localhost:3000). Stop the foreground server with Ctrl+C. The public shell still needs no database or provider credentials. Server database access requires MONGODB_URI and MONGODB_DB_NAME in untracked `.env.local` or deployment secrets; empty placeholders are in `.env.example`. Validation is lazy and production requires verified TLS. Never store secrets in `NEXT_PUBLIC_` variables. See [database development](docs/DEVELOPMENT.md).
 
 ## Validation and production startup
 
@@ -36,7 +38,7 @@ For a simple startup check, run the production server in one terminal, then in a
 ```powershell
 $response = Invoke-WebRequest -Uri http://localhost:3000
 $response.StatusCode
-$response.Content -match '<h1>LibraryOS</h1>'
+$response.Content -match '<title>LibraryOS</title>'
 ```
 
 Expected: status 200 and True. This is a manual runtime check. For automated tests:
@@ -49,11 +51,21 @@ npm run test:e2e
 
 `npm test` runs Node unit tests; `npm run test:watch` watches them. Playwright builds and starts its own production server on loopback port 3101, then runs Chromium smoke tests and stops the server. Keep port 3101 free and stop development servers first to avoid concurrent `.next/` writes. Browser binaries need a separate initial download; they are not installed by `npm ci`. Browser checks run separately from `npm run validate`. See [test boundaries](tests/README.md) for isolation and artifact handling.
 
+Real MongoDB integration checks run separately:
+
+```powershell
+npm run test:integration
+```
+
+This first runs `npm run test:db:prepare` to cache MongoDB 8.2.6, then starts a temporary loopback replica set. The initial Windows binary download is about 819 MB; subsequent runs reuse the cache. No Atlas URI is read by the fixtures and no paid service is provisioned. The unit suite remains fast and does not start MongoDB. Database integration tests are not included in `npm run validate`.
+
 ## Known tooling findings (Task 1.1)
 
 The initial install reports five high-severity affected packages in the development lint dependency chain, all originating from [GHSA-vfj7-8cjw-p6xm in braces](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm). At review on October 19, 2026, the advisory lists no patched version. `npm audit --omit=dev` reports zero runtime dependency findings. This does not mean the entire dependency tree is clean.
 
 ESLint 9.39.5 is deprecated upstream, but the current React, import and accessibility plugins used by `eslint-config-next` do not declare ESLint 10 support. Keep the compatible pinned toolchain until a reviewed update is available. Do not run `npm audit fix --force`: its suggested remediation downgrades the Next.js lint configuration across major versions. Recheck before enabling CI on untrusted input or preparing a deployment. No application input is passed to glob patterns in this scaffold.
+
+The clean install also reports an unapproved `unrs-resolver` postinstall hook. No blanket script approval was granted; lint and builds pass with the installed packages on this Windows environment. Review the hook if another platform needs it. The Codex sandbox may block Turbopack's CSS-worker communication or Playwright's local sockets; approved execution outside the sandbox passed. This is an execution-environment limitation, not a reason to disable build or accessibility checks.
 
 ## Structure and scope
 
@@ -62,9 +74,11 @@ ESLint 9.39.5 is deprecated upstream, but the current React, import and accessib
 - `docs/`: approved SRS and architecture/implementation designs.
 - `.next/`, `next-env.d.ts`, `node_modules/` and TypeScript build info are generated and ignored. Do not edit generated files; development, type generation and builds recreate Next.js types.
 
-Later approved tasks add domain services in `src/modules/`, infrastructure in `src/server/` and jobs in `src/workers/`. Handlers will call services rather than contain business logic. Authentication, capabilities and tenant scope must be enforced before any protected functionality is enabled.
+`src/server/config.ts` validates database settings; `src/server/db/connection.ts` owns the lazy per-process pool. Both are server-only. Later approved tasks add domain services in `src/modules/`, more infrastructure in `src/server/` and jobs in `src/workers/`. Handlers will call scoped services rather than query the database directly. Authentication, capabilities and tenant scope must be enforced before protected functionality is enabled.
 
-Tailwind/shadcn/ui/Motion integration and the visual shell follow in Task 1.3. Vitest and Playwright configs/tests are included in Task 1.2. Database and domain dependencies are deferred to their own phases. No public registration, API, authentication stub, billing or library workflow is implemented.
+The shell uses Tailwind CSS 4, locally owned shadcn/ui Button/Card adaptations and Motion with reduced-motion support. It includes desktop/mobile navigation, a keyboard skip link, serif headings and forest-green/gold/ivory tokens. Library tools are labeled as upcoming; no live statistics or patron data is invented. See [UI foundations](docs/UI_FOUNDATION.md) and [source attribution](docs/THIRD_PARTY_NOTICES.md).
+
+Vitest and Playwright provide unit, database integration and browser checks. Browser checks include axe audits, mobile navigation, keyboard focus, reduced motion and 320/768/1440px layouts. These support the accessibility target without certifying full conformance. Mongoose and disposable real-database fixtures are included; domain models, public APIs, authentication, billing and library workflows remain deferred.
 
 ## Project references
 
@@ -74,4 +88,4 @@ Tailwind/shadcn/ui/Motion integration and the visual shell follow in Task 1.3. V
 - [Next.js installation](https://nextjs.org/docs/app/getting-started/installation)
 - [Next.js ESLint configuration](https://nextjs.org/docs/app/api-reference/config/eslint)
 
-Work one task at a time. Task 1.3 requires user confirmation after Task 1.2. Do not commit or push without explicit approval.
+Work one task at a time. Phase 2, Task 2.1 is the current scope; Task 2.2 needs confirmation. Phase 1 review is not production/security release acceptance. Do not commit or push without explicit approval.

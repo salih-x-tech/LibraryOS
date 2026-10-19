@@ -1,6 +1,6 @@
 # LibraryOS implementation roadmap
 
-Status: roadmap approved for implementation; Task 1.1 was completed and the user authorized continuation to **Phase 1, Task 1.2 only**. Task 1.3 and later tasks require confirmation. Work one small task at a time. No commit or push is authorized; a task being ready to commit does not authorize a commit.
+Status: **Phases 1–2 and Phase 3 Tasks 3.1/3.2a–3.2c implementation are complete**. Task 3.2 remains open for approved distributed limiter integration; subsequent parts retain applicable approval gates. Infrastructure is validated on disposable MongoDB; Atlas schema deployment has not been performed. Git policy: the user now authorizes a local commit after each completed task. The current checkpoint includes previously completed uncommitted work since `c6d6310`; pushing still requires explicit approval.
 
 ## Sources and technical review
 
@@ -9,7 +9,7 @@ Reviewed [SRS](SRS.md), [architecture](ARCHITECTURE.md), [database](DATABASE_DES
 Resolve these design details before affected implementation tasks:
 
 - Policies describe scope fields but index scopeKey: define its canonical derivation before deploying the schema. Policy precedence remains PENDING APPROVAL D04–D05.
-- Specify explicit global idempotency scope/indexes rather than relying on nullable organizationId.
+- Global idempotency scope/indexes are resolved in Task 2.5: non-null scopeKey is global or tenant:<organizationId>; unique scopeKey/actor/operation/keyHash. See DEVELOPMENT.md. No nullable-tenant uniqueness is used.
 - Align User/platform guard fields with the transaction protocol before sensitive writes.
 - Permission defaults, role coexistence and support powers are still proposals. Unapproved access stays denied.
 - Ownership transfer, subscription administration, fine settlement, support inspection and export/deletion contracts need decision approval and API review before implementation.
@@ -76,8 +76,8 @@ Common gate per task: focused diff, appropriate passing tests, no secret/tenant 
 
 - [x] 1.1 Scaffold runtime/configuration and documented commands; verify build.
 - [x] 1.2 Configure isolated test runners and shell smoke flow.
-- [ ] 1.3 Add shell/tokens and accessibility review.
-- [ ] 1.4 Review dependencies/environment and record phase acceptance.
+- [x] 1.3 Add shell/tokens and accessibility review.
+- [x] 1.4 Review dependencies/environment and record phase acceptance.
 
 ### Task 1.1 implementation evidence — October 19, 2026
 
@@ -93,7 +93,7 @@ Validation on Node 24.18.0/npm 11.16.0:
 - `npm audit --omit=dev`: zero reported runtime findings. Full audit: five high-severity affected packages from one unpatched braces advisory in the development lint chain. ESLint 9 deprecation remains because several current Next.js lint plugins do not declare ESLint 10 compatibility. Details and advisory link are in README.md. No forced incompatible remediation or security waiver was applied.
 - SRS SHA256 remains `A8E0C275802A132C3AF820DDA58B9DDEC8B5BCB2E2D1D7C8796E081B6D084552`.
 
-No test runner/browser suite was configured: that is Task 1.2. No protected data, API, authentication stub, database connection or business workflow exists. The task is implemented with the tooling findings recorded above; user confirmation is still required before Task 1.2. No commit or push was made.
+At the Task 1.1 checkpoint, no test runner/browser suite was configured; that work was subsequently completed in Task 1.2 after confirmation. No protected data, API, authentication stub, database connection or business workflow was introduced. Tooling findings were recorded. No commit or push was made at that checkpoint.
 
 ### Task 1.2 implementation evidence — October 19, 2026
 
@@ -110,7 +110,47 @@ Validation:
 
 Updated README.md and tests/README.md with commands, runner boundaries, dedicated port, artifact handling and environment limitations. Browser tests inherit local environment; no database/provider is configured, and Phase 2 still needs disposable database safeguards. This setup is not a claim of production data isolation or cross-browser coverage.
 
-Task 1.3 remains unchecked and requires confirmation. No application UI/domain behavior or approved requirements changed; no commit or push was made.
+At the Task 1.2 checkpoint, Task 1.3 was pending confirmation; it was subsequently authorized and completed below. This task changed no application UI/domain behavior or approved requirements; no commit or push was made at that checkpoint.
+
+### Task 1.3 implementation evidence — October 19, 2026
+
+First created the user-authorized local scaffold checkpoint `c6d6310` on main. No push was performed. The subsequent shell work remains uncommitted pending approval.
+
+Implemented only the visual shell: forest/ivory/gold semantic tokens, responsive desktop sidebar/mobile disclosure, upcoming-tool labels, real same-page navigation, skip link, focus states, original CSS book illustration and a reduced-motion-aware Motion logo. Library workflows remain unavailable; there are no fabricated tenant metrics or accounts.
+
+Files: package.json/package-lock.json; postcss.config.mjs; components.json; src/app/page.tsx and globals.css; src/components/shell/app-shell.tsx and icon.tsx; src/components/ui/button.tsx and card.tsx; src/lib/utils.ts; existing smoke tests; README.md; tests/README.md; docs/UI_FOUNDATION.md and THIRD_PARTY_NOTICES.md. The existing root layout was sufficient and unchanged.
+
+Dependency purposes: Tailwind/PostCSS compile theme utilities; Motion handles the small interaction with explicit preference checks; class-variance-authority/clsx/tailwind-merge support locally owned shadcn/ui primitives. Axe is development-only accessibility tooling. Native button/card adaptations need no modal/slot dependency or remote fonts.
+
+Validation:
+
+- Vitest: one synchronous server-render smoke test passed.
+- ESLint: passed with zero warnings; strict type checking passed.
+- Playwright: production build plus all eight Chromium tests passed. Includes startup/not-found, 320/768/1440px no-overflow layouts and axe A/AA scans, skip-link focus, mobile disclosure/Escape/section navigation, and reduced motion.
+- Initial contrast and reduced-motion findings were corrected and rechecked; no axe rule exclusions were added. Desktop/mobile full-page screenshots were visually inspected.
+- Runtime-only npm audit: zero reported findings. Full install audit retains the five existing development lint-chain findings documented under Task 1.1; this is not a security waiver.
+- Dependency tree valid; diff whitespace check passed; SRS SHA256 unchanged. Browser server was stopped by the runner after checks.
+
+These checks support the WCAG target but do not certify full conformance or screen-reader/cross-browser coverage. At the Task 1.3 checkpoint, Task 1.4 awaited confirmation; it was subsequently authorized and completed below. No backend/domain implementation, subsequent commit or GitHub push was performed.
+
+### Task 1.4 environment review and Phase 1 gate — October 19, 2026
+
+Scope: reviewed dependency manifests/lockfile, Node/npm requirements, environment template, ignores, Next.js/TypeScript/PostCSS/shadcn configuration, test isolation and local commands. No application code or dependency versions changed. Updated only README.md, the environment-template comment and this roadmap to reflect current progress.
+
+| Acceptance item | Evidence / outcome |
+| --- | --- |
+| Reproducible dependency installation | `npm ci --offline --no-audit --no-fund` passed from the populated cache; no lockfile drift introduced by reinstall. Fresh machines still need network-enabled npm ci. |
+| Compatible installed environment | Node 24.18.0/npm 11.16.0 match project requirements; direct versions pinned and match the lockfile; resolved registry URLs are npm registry URLs. |
+| Validation after clean install | `npm run validate` passed lint, strict type checking and one unit test; its build stage hit a sandbox CSS-worker connection error. The unchanged `npm run build` passed outside the sandbox. No checks/configuration were weakened. |
+| Browser/accessibility evidence | Existing Task 1.3 production-build run: eight passing Chromium checks including responsive overflow, axe, keyboard, navigation and reduced motion; desktop/mobile screenshots inspected. Source/test code has not changed in this review, so the browser suite was not repeated unnecessarily. |
+| Secrets and generated outputs | .env.local/.env.production, dependencies, Next output and test artifacts are ignored; .env.example is tracked and credential-free. Limited common credential-pattern scan found no matches in source/document candidates; this is not a comprehensive secret-scan guarantee. |
+| Dependency audit | Refreshed full audit: five high findings across braces/micromatch/fast-glob/Next lint packages; runtime-only audit: zero. ESLint 9 deprecation remains. No force remediation or security waiver applied. |
+| Install-script warning | npm reports an unapproved unrs-resolver postinstall hook. No blanket approval was granted; current platform validation passes. Review before approving that hook if another environment needs it. |
+| Requirements and scope | SRS SHA256 still A8E0C275802A132C3AF820DDA58B9DDEC8B5BCB2E2D1D7C8796E081B6D084552; no domain models, database connection, authentication or library APIs introduced. |
+
+Phase 1 engineering acceptance: scaffold, styling, test runners, accessibility review and development setup satisfy the phase's implemented scope, with the tooling findings explicitly carried forward. Final user sign-off is pending. This does not approve production deployment, waive vulnerabilities or establish complete WCAG conformance. Do not mark Phase 13/14 security/release gates satisfied from this evidence.
+
+Next proposed task: **Phase 2, Task 2.1 — server configuration, MongoDB/Mongoose connection and isolated database fixtures**. Before its affected tests run, select a transaction-capable isolated database and enforce safeguards against production connections. Hosting/operational choices remain PENDING APPROVAL D09; no paid infrastructure or production credentials are implied. No later phase is started by completing this review. No new commit or push was made.
 
 ## Phase 2 — Database connection and shared infrastructure
 
@@ -136,11 +176,42 @@ Task 1.3 remains unchecked and requires confirmation. No application UI/domain b
 
 **Small tasks and completion checklist:**
 
-- [ ] 2.1 Add configuration/connection and isolated database fixtures.
-- [ ] 2.2 Add error/DTO/pagination/logging conventions and tests.
-- [ ] 2.3 Add transactions/scoped access and rollback tests.
-- [ ] 2.4 Add audit/outbox models and atomic append tests.
-- [ ] 2.5 Add idempotency and explicit index/validator deployment checks.
+- [x] 2.1 Add configuration/connection and isolated database fixtures.
+- [x] 2.2 Add error/DTO/pagination/logging conventions and tests.
+  - [x] 2.2a Typed public errors, explicit JSON DTO response helpers and generated request IDs.
+  - [x] 2.2b Bounded pagination and scope-bound cursor conventions with tests.
+  - [x] 2.2c Safe field-validation details, remaining response conventions and redacted structured logging with tests.
+- [x] 2.3 Add transactions/scoped access and rollback tests.
+  - [x] 2.3a Shared transaction execution, sanitized failures and real commit/rollback/retry tests.
+  - [x] 2.3b Tenant-required access primitives and missing/foreign-scope tests; trusted membership resolution remains Phase 4.
+- [x] 2.4 Add audit/outbox models and atomic append tests.
+- [x] 2.5 Add idempotency and explicit index/validator deployment checks.
+
+### Task 2.1 implementation evidence — October 19, 2026
+
+Implemented server-only lazy configuration and Mongoose connection lifecycle, plus independent unit/integration runners and real disposable replica-set fixtures. No domain model, tenant query service, API, authentication, shared transaction helper, index deployment or logging framework was added.
+
+Files: src/server/config.ts; src/server/db/connection.ts; tests/helpers/server-only.ts; tests/unit/server-config.test.ts and database-connection.test.ts; tests/integration/database.test.ts; tests/integration/helpers/{database,mongodb-version,prepare-mongodb}.ts; vitest.integration.config.ts; updates to vitest.config.ts, tsconfig.json, package.json/package-lock.json, .env.example, README.md, tests/README.md and docs/DEVELOPMENT.md.
+
+Runtime dependencies: Mongoose 9.11.2 and server-only 0.0.1. Development dependency: mongodb-memory-server-core 11.3.0, necessary for actual temporary MongoDB transactions without Atlas credentials or a system MongoDB installation. It has no MongoDB install-download hook. Test server version 8.2.6 is pinned independently of future production deployment choices.
+
+Controls implemented:
+
+- URI parsing and explicit database-name validation occur only when requested. Production rejects TLS-disabled, insecure certificate and hostname options using normalized MongoDB driver settings. Config/open/close errors omit credentials and original error causes.
+- One bounded pool/initial promise per manager; runtime manager cached across Next development reloads. Failed initial attempts clean up/retry; get waits for close; failed shutdown retains ownership for safe retry. Automatic collection/index creation and operation buffering are disabled.
+- Integration fixtures require test mode, generate a unique database on their own loopback replica set and never accept an external URI. Destructive clear verifies exact name, test prefix, host and port. The ordinary application accessor is blocked in test mode.
+- Vitest replaces the server-only marker only during tests. Explicit TypeScript config imports use allowImportingTsExtensions with noEmit; strict settings remain enabled.
+
+Validation results:
+
+- `npm test`: **18 tests passed** across three files, including TLS/config rejection, error redaction, concurrent pool sharing, failed-start retry and close races/failures.
+- `npm run test:integration`: **4 tests passed** using real MongoDB. Proved pool reuse, transaction commit/rollback, cleanup refusal after identity mismatch and two fixtures with isolated records/cleanup even when application URI is set to an unrelated sentinel.
+- Cold download initially exceeded a test hook timeout. Fixed the setup by preparing/caching the binary before Vitest starts, not by skipping tests or weakening timeout assertions. Download completed and the subsequent full integration run passed in about 11 seconds.
+- Lint passed with zero warnings; strict type checking passed; production build passed without a database URI configured.
+- Valid direct dependency tree; runtime-only audit zero findings. Existing five development lint-chain findings remain recorded; no force remediation or security waiver applied.
+- Diff whitespace check passed; SRS SHA256 unchanged. Real fixture servers were stopped by teardown. No browser rerun was needed because application UI behavior was unchanged.
+
+Atlas connectivity/credentials and production deployment were not exercised or provisioned; D09 remains PENDING APPROVAL. The fixture proves test-database separation, not future tenant authorization. Raw query-error mapping and operational diagnostics remain Task 2.2 responsibilities. Wait for confirmation before starting **Task 2.2: shared errors, DTO/response/pagination conventions and redacted logging**. No commit or push was made.
 
 ## Phase 3 — Authentication and secure sessions
 
@@ -166,8 +237,14 @@ Task 1.3 remains unchecked and requires confirmation. No application UI/domain b
 
 **Small tasks and completion checklist:**
 
-- [ ] 3.1 Add identity schema/hashing and uniqueness tests.
+- [x] 3.1 Add identity schema/hashing and uniqueness tests.
+  - [x] 3.1a Global User schema, normalized email uniqueness, credential projection and explicit identity provisioning tests.
+  - [x] 3.1b Argon2id hashing/verification, local parameter benchmarking and tests; deployment-hardware benchmark remains a release gate. No unapproved password-policy defaults.
 - [ ] 3.2 Add sessions, CSRF and distributed limiter integration.
+  - [x] 3.2a Session model, opaque credential/cookie primitives and explicit storage constraints.
+  - [x] 3.2b Session resolution, current-user/version checks, rotation/revocation and expiry tests with explicit policy inputs.
+  - [x] 3.2c Session-bound CSRF and trusted Origin validation with negative tests.
+  - [ ] 3.2d Approved distributed limiter adapter/integration, storage/threshold/failure-policy tests (D09).
 - [ ] 3.3 Add login/logout API and browser flow.
 - [ ] 3.4 Add approved activation/recovery with development delivery.
 - [ ] 3.5 Add own-profile edits and authentication security review.
@@ -534,3 +611,105 @@ Missing configuration blocks the affected feature explicitly; never invent defau
 Preserve SRS provisional targets: p95 dashboard/circulation API <=2 seconds, search <=1 second, initial key page <=3 seconds and monthly availability objective 99.5%. Measurement conditions/final objectives remain **PENDING APPROVAL** D09, not finalized SLAs. Retain WCAG 2.2 AA and usability over ornament.
 
 Digital lending, automated billing, SMS, forecasting and advanced analytics remain deferred. No schedule/cost/public-launch promises are introduced. After roadmap approval, propose phase 1 task 1.1 only; do not start all phases together.
+
+### Task 2.2a implementation evidence — October 19, 2026
+
+The user reported completing Atlas connection setup and authorized continuation. This small slice adds server-only typed public error codes, fixed public messages, explicit JSON DTO success/creation envelopes, server-generated request IDs, no-store response headers and sanitized exception mapping. DatabaseConnectionError maps to 503; unknown errors map to generic 500 without exposing messages, stacks or raw driver objects. Creation responses require a local API resource Location. No routes, database queries, domain behavior or auth bypass were introduced. Explicit DTO projection is still the caller's responsibility; the JSON type alone does not redact sensitive fields.
+
+Files: src/server/http/errors.ts, src/server/http/responses.ts, tests/unit/http-responses.test.ts, docs/DEVELOPMENT.md and this roadmap. No dependencies changed. Lint and strict type checking passed; all 31 unit tests passed (13 new response-boundary cases). Database integration/browser tests were not repeated because no connection lifecycle, query, route or UI changed. Real Atlas credentials were not read and connectivity was not independently verified. No commit or push was performed.
+
+Task 2.2 remains incomplete: pagination/cursor binding, field validation details, remaining response conventions and safe structured logging are subsequent independent slices. Wait for user confirmation before Task 2.2b. Approved requirements and PENDING APPROVAL business decisions remain unchanged.
+
+### Task 2.2b implementation evidence — October 19, 2026
+
+Implemented bounded pagination parsing (default 25, maximum 100), duplicate/size rejection, signed scope-bound createdAt/ObjectId cursors, limit-plus-one slicing and list response metadata. Added src/server/http/pagination.ts and tests/unit/pagination.test.ts; updated src/server/http/responses.ts and development documentation. Cursor signing keys are injected, copied and checked for minimum length; no environment secrets were read or generated, and no routes were enabled. Future route integration must provision a random shared secret and enforce authorization independently.
+
+Validation: lint and strict type checking passed; all 49 unit tests passed, including 18 new pagination/list cases. Tests cover tenant/resource/branch/filter/sort mismatches, key mismatch, tampering, malformed inputs, invalid dates, boundary sizes, filter-order normalization and lookahead behavior. No database/UI/connection changes warranted repeating integration/browser suites. SRS and approved architecture contracts remain unchanged. No commit or push was performed.
+
+Next: Task 2.2c safe validation details, remaining response conventions and redacted structured logging. Wait for user confirmation before proceeding.
+
+### Task 2.2c implementation evidence — October 19, 2026
+
+Completed the remaining Task 2.2 conventions: safe declared-field validation issues, explicit 202/204 helpers, 429 Retry-After handling and an allowlisted structured operational logger. Updated src/server/http/errors.ts, responses.ts, tests/unit/http-responses.test.ts; added src/server/logging.ts and tests/unit/logging.test.ts. Updated development guidance and this roadmap. No packages, routes, business policies, database operations or authentication behavior changed.
+
+Validation: lint, strict TypeScript checks and all 56 unit tests passed. Seven new cases exercise safe validation projections, unsafe/undeclared fields and excess issue bounds, accepted/bodyless responses, retry-delay validation, nested/cyclic secret exclusion from logs, injection attempts and sink failure containment. Database/browser suites were not repeated because no queries, connection lifecycle, routes or UI changed. SRS hash remains unchanged. No commit or push was performed.
+
+Task 2.2 is complete. Future endpoints still need integration, domain validation, authentication/authorization and a real distributed limiter; thresholds/provider/failure policy remain PENDING APPROVAL D09. Next is Task 2.3 transaction and scoped-access helpers, pending user confirmation. Do not start that task automatically.
+
+### Task 2.3a implementation evidence — October 19, 2026
+
+Implemented only shared transaction execution in src/server/db/transaction.ts, with explicit connection/session ownership through Mongoose, primary/snapshot reads, majority commit and a finite 15-second driver execution/retry budget. Preserves public ApplicationError rejections and sanitizes unexpected infrastructure failures. Added tests/unit/transaction.test.ts and three synthetic probe integration cases in tests/integration/database.test.ts; updated development guidance and this roadmap. Scoped access remains Task 2.3b.
+
+Validation: strict type checking, lint and all 59 unit tests passed. All seven isolated real MongoDB integration tests passed, including helper commit, full rollback/session cleanup and a labeled synthetic transient callback failure retried by the real driver without duplicate persisted writes. The retry test simulates the transient error after an actual write; it is not a network/unknown-commit fault test. The initial type check exposed Mongoose's narrower options declaration; the final code uses a structural typed extension for the driver-supported timeout option, without strictness changes. No browser suite was repeated because UI/routes are unchanged.
+
+No Atlas credentials were read and integration tests used only owned disposable loopback replica sets. No business models, authentication, permission defaults, idempotency protocol or external effects were implemented. Approved SRS is unchanged; no commit or push was performed. Wait for user confirmation before Task 2.3b.
+
+### Tasks 2.3b–2.5 and Phase 2 completion evidence — October 19, 2026
+
+The user explicitly authorized all remaining Phase 2 work in this turn. Implemented the tasks sequentially; no Phase 3 feature was started.
+
+- **2.3b:** Added src/server/db/scope.ts with validated immutable tenant selection, mandatory $and tenant predicates and foreign-reference rejection. Unit tests reject omitted/invalid scope; real MongoDB tests prove conflicting predicates cannot read/update another tenant. This does not replace future authenticated membership/branch resolution or revocation fences.
+- **2.4:** Added src/server/db/persistence.ts, src/modules/audit/{model,append}.ts and src/modules/notifications/{outbox-model,publish}.ts. Active-session append/publish helpers explicitly project metadata and identifiers. Audit supports explicit global versus tenant scope and actor/system alternatives. Outbox persistence has tenant/event uniqueness, pending/lease fields and no delivery side effects. Real tests prove precommit invisibility, atomic commit/rollback, per-tenant uniqueness and safe input projection.
+- **2.5:** Added src/server/idempotency/{model,service}.ts and scripts/db/{validators,indexes,deploy}.ts. Non-null canonical scopeKey resolves the global uniqueness review finding. Requests/keys are hashed, stable success data/status are persisted atomically, changed bodies conflict, replays reauthorize, expiry is checked before TTL cleanup, and duplicate/ambiguous outcomes use a read-only recovery lookup without outer work retries. Retention is a required caller parameter with no approved business default. Explicit provisioning/verification deploys three strict validators and six named indexes. Added db:plan/db:verify/db:apply package scripts, unit/integration cases and development/test guidance. Dependencies and lockfile were not changed by these tasks.
+
+Final validation:
+
+| Check | Result |
+| --- | --- |
+| ESLint | Passed with zero warnings |
+| Strict TypeScript | Passed |
+| Unit tests | 66 passed across nine files |
+| Real MongoDB integration tests | 23 passed across three files; owned disposable loopback replica sets only |
+| Production build | Passed; only existing public root and not-found routes generated |
+| Deployment plan command | Passed; prints collection/index plan without a connection |
+| Whitespace/SRS | diff --check passed; SRS SHA256 remains A8E0C275802A132C3AF820DDA58B9DDEC8B5BCB2E2D1D7C8796E081B6D084552 |
+
+The combined event/idempotency regression test exposed Mongoose rollback attempting to restore an unused nested payload version field. Explicitly disabling that sub-schema version key corrected the failure without weakening strict schemas. Final combined rollback and transient retry tests pass across all four collections. Temporary synthetic diagnostic output was removed. Unknown-commit testing injects an error after a real successful commit and lets the actual driver retry commit; a separate lost-final-ack test resolves through the persisted result. These are controlled fault simulations, not production network/failover certification.
+
+Phase 2 implementation acceptance is complete. Browser/accessibility checks were not repeated because UI and public routes are unchanged. No Atlas schema changes, credential inspection, email, domain APIs or real organization mutations were performed. Database deployment/backup/migration and D08/D09 operational choices remain separate gates; deploy/verify infrastructure before enabling future mutation routes. D02–D09 unresolved business decisions retain PENDING APPROVAL status. Existing Phase 1 development-tooling advisory findings remain recorded, not waived. No commit or push was performed.
+
+**Next:** Phase 3 authentication and secure sessions, starting with one small task only after user confirmation and review of applicable D02/D09 decisions. Stop here for Phase 2 review.
+
+### Task 3.1a implementation evidence — October 19, 2026
+
+Started Phase 3 with only the global User schema/email-uniqueness slice. Added src/modules/auth/{user-model,validation}.ts, scripts/db/identity.ts, tests/unit/auth-validation.test.ts and tests/integration/auth/user.test.ts. Updated roadmap/development guidance. Required statuses/counters have no lifecycle default; global identity contains no tenant grants. Added authorizationVersion/operationFence alongside sessionVersion to align the user record with the approved critical-transaction guard protocol; guard operations remain future service work.
+
+Validation: ESLint and strict TypeScript passed; 75 unit tests and 27 isolated real MongoDB integration tests passed. New tests verify normalization without provider rewriting, malformed input sanitization, concurrent duplicate uniqueness, passwordHash default query exclusion/explicit selection, rejected privilege fields, missing status, invalid counters, repeatable explicit provisioning and raw server-validator rejection including noncanonical emails. No UI/routes/dependencies changed; production/browser checks were not repeated for this internal schema slice. SRS remains unchanged.
+
+Task 3.1 is still open: next is 3.1b Argon2id hashing/verification with explicit technical parameter review/benchmarking and focused tests. Activation/password/session policy and registration/rate-limit choices remain PENDING APPROVAL D02/D09; no endpoints were enabled. No Atlas schema changes, commits or pushes were performed. Wait for confirmation before 3.1b.
+
+### Task 3.1b and Task 3.1 completion evidence — October 19, 2026
+
+Completed the user's request to finish Task 3.1. Added src/modules/auth/{passwords,password-format}.ts and scripts/benchmark-passwords.ts; updated user-model.ts and scripts/db/identity.ts to enforce the shared bounded Argon2id storage format. Added tests/unit/passwords.test.ts and extended tests/integration/auth/user.test.ts to store/verify real synthetic-password hashes and reject plaintext through Mongoose and raw MongoDB writes. Pinned argon2 0.45.1 in package.json/package-lock.json and added benchmark:passwords. No application endpoint/UI or activation/session policy was added.
+
+Validation: lint and strict TypeScript passed; all 81 unit tests and 28 disposable real MongoDB integration tests passed. Production build passed with only existing public root/not-found routes. Direct dependency tree is valid; runtime-only npm audit reported zero findings. The five existing development lint-chain findings are unchanged. Actual hash/verify tests cover distinct salts, wrong passwords, exact Unicode/whitespace/long input, no truncation, parameter bounds, supported older-profile rehash indication, malformed stored hashes, input bounds and sanitized native failures. Test failures initially exposed the package's m,p,t PHC ordering and ESM spy restrictions; both were corrected without loosening format validation or disabling assertions.
+
+Local benchmark on Node 24.18.0/Windows x64/i5-10210U/8 logical CPUs/16,157 MiB system memory: five samples each, hash median 161 ms (max 165), verify median 161 ms (max 163), two concurrent hashes 168 ms elapsed, peak whole-process RSS 192,852 KiB. Profile: Argon2id v19, 64 MiB, 3 iterations, parallelism 1, random 16-byte salt, 32-byte digest. Reproducible command and primary references are in DEVELOPMENT.md. Repeat measurements on actual deployment hardware before release; this sample is not a production benchmark or SLA.
+
+Task 3.1 is complete. Password/activation policy D02, distributed rate limits/hosting D09, deployment-hardware benchmarking and subsequent auth/session/CSRF work remain gated. npm's pending native install-script notices were recorded; no blanket approval was performed, and bundled native binary execution was verified. SRS remains unchanged. No Atlas writes, commits or pushes were performed. Next is Task 3.2; wait for user confirmation before proceeding.
+
+### Task 3.2a implementation evidence — October 19, 2026
+
+Implemented only session storage/token/cookie foundations. Added src/modules/auth/{session-format,session-model,sessions}.ts, scripts/db/sessions.ts, tests/unit/sessions.test.ts and tests/integration/auth/sessions.test.ts. Updated roadmap/development documentation. No dependencies or approved requirements changed. Credentials use random 256-bit tokens and SHA-256 storage digests; session documents contain no tenant authority. Expiry is explicit with no lifetime defaults.
+
+Validation: ESLint, strict TypeScript and all 85 unit tests passed. All 31 isolated real MongoDB integration tests passed across five files, including new hash-only storage, duplicate-token rejection, strict raw-token/role/counter/expiry constraints and repeatable index/validator deployment. Unit tests cover token independence/canonicalization, cookie flags, explicit expiry and protected-cookie clearing. No UI/routes changed, so build/browser tests were not repeated for this slice. SRS hash is unchanged. No Atlas writes, commits or pushes were performed.
+
+Task 3.2 remains open. Next is 3.2b session resolution/current-user/version checks and rotation/revocation with explicit policy inputs; then CSRF and approved distributed limiter integration. Authentication endpoints remain disabled. D02/D09 decisions retain PENDING APPROVAL. Wait for user confirmation before the next part.
+
+### Task 3.2b implementation evidence — October 19, 2026
+
+Added src/modules/auth/session-service.ts, tests/unit/session-policy.test.ts and tests/integration/auth/session-service.test.ts. Implemented fresh session/current-user/version checks, required explicit authorization policy, guarded transactional issuance, single-use rotation, idempotent single-token revocation and atomic revoke-all/session-version invalidation. Returns minimal immutable global principals; no roles, memberships, passwords or token hashes. Updated development documentation and roadmap. No dependencies, schemas or approved requirements changed.
+
+Validation: lint and strict TypeScript passed; 86 unit tests passed. All 45 isolated real MongoDB integration tests passed across six files, including 14 new session-service cases. Coverage includes malformed/unknown/expired/revoked tokens, missing/suspended/unverified/version-changed users, latest authorization versions, rotation replay, rotation/revoke-all rollback, concurrent rotation, issuance versus revoke-all, stale verified-read rejection, nontransactional misuse, explicit immutable policy inputs, sanitized outages and identity snapshots before asynchronous writes. Query typing was corrected through narrow inferred predicates rather than MongoDB/Mongoose filter casts or strictness changes.
+
+Task 3.2b is complete. Ordinary lookup does not lock concurrent authorization; future sensitive services must revalidate transactional guards. Single-token revocation does not follow an already-committed replacement/session family; concurrent-tab/logout policy remains D02. No auth endpoints, browser cookies or automatic session lifetimes were enabled. D02/D09 gates, CSRF and distributed limiter integration remain pending. No UI/public route changes warranted another build/browser run in this slice; the prior production build remains the latest such evidence. SRS remains unchanged. No Atlas writes, commits or pushes were performed.
+
+Next is Task 3.2c session-bound CSRF and trusted Origin validation. Wait for confirmation before proceeding.
+
+### Task 3.2c implementation evidence — October 19, 2026
+
+Added src/server/security/csrf.ts and tests/unit/csrf.test.ts; extended tests/integration/auth/session-service.test.ts with a real rotation/revocation pipeline check. Updated roadmap/development guidance. The helper uses domain-separated HMAC-SHA256, a random 32-byte nonce, explicit shared secret/public Origin configuration, session/user/version/origin binding and constant-time signature verification. Authenticated mutations require exact trusted Origin, JSON and a custom header. No configuration secrets/defaults, endpoints, cookies or dependencies were added.
+
+Validation: ESLint and strict TypeScript passed; all 93 unit tests and all 46 disposable MongoDB integration tests passed. Seven new unit cases cover replica consistency, mismatched users/sessions/versions/origins/keys, malformed/oversized/duplicate tokens, missing/null/lookalike/forwarded Origins, form/cookie-only requests, unsupported methods, copied configuration, missing principals and sanitized errors. The integration test resolves the session before the guard, rotates it, rejects the old token/principal, accepts a new token, then verifies revoke-all causes authenticated CSRF rejection. A final focused run passed after refining the post-revocation assertion to use the actual lookup result. No weakening or exclusions were introduced.
+
+Task 3.2c is complete. Task 3.2 remains open for 3.2d approved distributed limiter integration; storage/provider, thresholds and failure policy remain PENDING APPROVAL D09. Login/bootstrap CSRF integration remains part of the future disabled login flow; this step provides only the authenticated mutation primitive. No UI/routes changed, so production build/browser suites were not repeated. SRS remains unchanged. No Atlas writes, commits or pushes were performed. Wait for user confirmation before the next part and obtain required business/operational decisions before enabling affected paths.

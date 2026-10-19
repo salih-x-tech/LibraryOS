@@ -8,6 +8,9 @@ export default defineConfig({
     },
   },
   test: {
+    alias: {
+      "server-only": fileURLToPath(new URL("./tests/helpers/server-only.ts", import.meta.url)),
+    },
     environment: "node",
     include: ["tests/unit/**/*.test.ts", "tests/unit/**/*.test.tsx"],
     globals: false,

@@ -8,7 +8,8 @@ describe("startup page", () => {
     const markup = renderToStaticMarkup(createElement(HomePage));
 
     expect(process.env.NODE_ENV).toBe("test");
-    expect(markup).toContain("<main>");
-    expect(markup).toContain("<h1>LibraryOS</h1>");
+    expect(markup).toContain('id="main-content"');
+    expect(markup).toContain("Your library,");
+    expect(markup).toContain("thoughtfully organized.");
   });
 });

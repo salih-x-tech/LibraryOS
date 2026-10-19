@@ -1,6 +1,6 @@
 # LibraryOS implementation roadmap
 
-Status: **Phases 1–2 and Phase 3 Tasks 3.1/3.2a–3.2c implementation are complete**. Task 3.2 remains open for approved distributed limiter integration; subsequent parts retain applicable approval gates. Infrastructure is validated on disposable MongoDB; Atlas schema deployment has not been performed. Git policy: the user now authorizes a local commit after each completed task. The current checkpoint includes previously completed uncommitted work since `c6d6310`; pushing still requires explicit approval.
+Status: **Phases 1–2 and Phase 3 Tasks 3.1–3.2 implementation are complete**. Task 3.3 and later work retain applicable approval gates. Infrastructure is validated on disposable MongoDB; Atlas schema deployment has not been performed. Git policy: the user authorizes a local commit after each completed task. Checkpoint `0c582d6` includes previously completed work; pushing still requires explicit approval.
 
 ## Sources and technical review
 
@@ -221,7 +221,7 @@ Atlas connectivity/credentials and production deployment were not exercised or p
 
 **Required folders and files:** `src/modules/auth/{user-model,session-model,identity-token-model,validation,passwords,sessions,service}.ts`, `src/server/security/{csrf,rate-limit}.ts`, `src/app/api/v1/auth/**/route.ts`, `src/app/api/v1/me/route.ts`, `src/app/(auth)/`, `tests/integration/auth/`, `tests/e2e/auth.spec.ts`.
 
-**Dependencies:** Phase 2. Activation/password/session defaults **PENDING APPROVAL** D02; distributed rate-limit implementation/thresholds and registration availability **PENDING APPROVAL** D09. Incomplete flows stay disabled.
+**Dependencies:** Phase 2. Activation/password/session defaults **PENDING APPROVAL** D02. Authentication limiter storage, fail-closed behavior and initial thresholds were explicitly approved on October 19, 2026 and implemented in 3.2d; trusted ingress, other limits and registration availability remain **PENDING APPROVAL** D09. Incomplete flows stay disabled.
 
 **Database models:** User, Session, IdentityToken; normalized email/token uniqueness and expiry indexes. Check expiry independently of TTL cleanup.
 
@@ -240,11 +240,11 @@ Atlas connectivity/credentials and production deployment were not exercised or p
 - [x] 3.1 Add identity schema/hashing and uniqueness tests.
   - [x] 3.1a Global User schema, normalized email uniqueness, credential projection and explicit identity provisioning tests.
   - [x] 3.1b Argon2id hashing/verification, local parameter benchmarking and tests; deployment-hardware benchmark remains a release gate. No unapproved password-policy defaults.
-- [ ] 3.2 Add sessions, CSRF and distributed limiter integration.
+- [x] 3.2 Add sessions, CSRF and distributed limiter integration.
   - [x] 3.2a Session model, opaque credential/cookie primitives and explicit storage constraints.
   - [x] 3.2b Session resolution, current-user/version checks, rotation/revocation and expiry tests with explicit policy inputs.
   - [x] 3.2c Session-bound CSRF and trusted Origin validation with negative tests.
-  - [ ] 3.2d Approved distributed limiter adapter/integration, storage/threshold/failure-policy tests (D09).
+  - [x] 3.2d Approved MongoDB distributed limiter adapter/integration, storage/threshold/fail-closed tests (scoped D09 approval recorded).
 - [ ] 3.3 Add login/logout API and browser flow.
 - [ ] 3.4 Add approved activation/recovery with development delivery.
 - [ ] 3.5 Add own-profile edits and authentication security review.
@@ -713,3 +713,13 @@ Added src/server/security/csrf.ts and tests/unit/csrf.test.ts; extended tests/in
 Validation: ESLint and strict TypeScript passed; all 93 unit tests and all 46 disposable MongoDB integration tests passed. Seven new unit cases cover replica consistency, mismatched users/sessions/versions/origins/keys, malformed/oversized/duplicate tokens, missing/null/lookalike/forwarded Origins, form/cookie-only requests, unsupported methods, copied configuration, missing principals and sanitized errors. The integration test resolves the session before the guard, rotates it, rejects the old token/principal, accepts a new token, then verifies revoke-all causes authenticated CSRF rejection. A final focused run passed after refining the post-revocation assertion to use the actual lookup result. No weakening or exclusions were introduced.
 
 Task 3.2c is complete. Task 3.2 remains open for 3.2d approved distributed limiter integration; storage/provider, thresholds and failure policy remain PENDING APPROVAL D09. Login/bootstrap CSRF integration remains part of the future disabled login flow; this step provides only the authenticated mutation primitive. No UI/routes changed, so production build/browser suites were not repeated. SRS remains unchanged. No Atlas writes, commits or pushes were performed. Wait for user confirmation before the next part and obtain required business/operational decisions before enabling affected paths.
+
+### Task 3.2d and Task 3.2 completion evidence — October 19, 2026
+
+The user explicitly approved MongoDB-backed distributed auth limiting with fail-closed 503 behavior and the proposed starting thresholds: login 5 failed/account/15 minutes and 30 attempts/IP/15 minutes; registration/recovery each 5 requests/IP/hour and 3 requests/account/hour. Recorded the scoped approval in SECURITY.md and DEVELOPMENT.md without changing the SRS or treating D09 as globally resolved.
+
+Added src/server/security/{rate-limit,rate-limit-contract}.ts, scripts/db/rate-limit.ts, tests/unit/rate-limit.test.ts and tests/integration/auth/rate-limit.test.ts. The adapter verifies deployment readiness, uses shared atomic MongoDB counters/server time, HMAC subject keys, bounded execution, transactional in-flight login reservations and exactly-once successful refunds. Delayed completion cannot credit a replacement window. Failure/store outages do not enable bypasses. Approved thresholds are immutable constants; no user existence lookup, raw address storage, external service, new dependency or in-memory fallback was added.
+
+Validation: lint and strict TypeScript passed; all 96 unit tests passed. The complete real MongoDB suite passed 55 tests across seven files. The final focused nine-test limiter suite also passed after adding explicit store execution budgets. Tests use two independent connection pools sharing a disposable replica set, verify exact concurrent account/IP admissions, five completed failures, successful refunds/idempotence, the 30-attempt IP cap, registration/recovery separation, normalization, window reset before TTL cleanup, late success, strict deployment/validator checks, Retry-After and sanitized fail-closed storage errors. Production build passed with only existing public root/not-found routes. No browser suite was repeated because UI/routes are unchanged. SRS hash remains unchanged.
+
+Task 3.2 implementation is complete. Primitives remain unexposed pending Task 3.3 login/logout orchestration and review. Trusted ingress/IP extraction, public Origin/key provisioning, other rate limits and operational deployment remain scoped D09 gates; activation/session/password policy remains D02. No Atlas schema changes or actual account mutations were performed. User authorizes a local commit after this completed task; no push is authorized. Next is Task 3.3, subject to its remaining explicit policy approvals.

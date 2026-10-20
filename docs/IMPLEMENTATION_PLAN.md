@@ -1,6 +1,6 @@
 # LibraryOS implementation roadmap
 
-Status: **Phases 1–2 and Phase 3 Tasks 3.1–3.3 implementation are complete**. Task 3.4 policy, synthetic service orchestration and synthetic UI/transport acceptance are complete; usable delivery and real recovery HTTP deployment remain gated. Scoped login/session policy and local HTTPS on loopback were approved; hosted ingress remains gated. Infrastructure is validated on disposable MongoDB; Atlas schema deployment has not been performed. The user authorizes local commits after completed tasks and continuation; pushing still requires explicit approval.
+Status: **Phases 1–2 and Phase 3 Tasks 3.1–3.3 implementation are complete**. Task 3.4 policy, synthetic service orchestration and synthetic UI/transport acceptance are complete; usable delivery and real recovery HTTP deployment remain gated. Scoped login/session policy and local HTTPS on loopback were approved; hosted ingress remains gated. Infrastructure is validated on disposable MongoDB; Atlas schema deployment has not been performed. The user authorizes commits and pushes to the configured GitHub remote after each completed task (October 20, 2026). This does not authorize deployment or unfinished recovery activation.
 
 ## Sources and technical review
 
@@ -266,6 +266,8 @@ Atlas connectivity/credentials and production deployment were not exercised or p
     - [x] 3.4c.1 Test-only guarded services, password rules, shared request/completion limits and synthetic delivery integration.
     - [x] 3.4c.2 Synthetic UI/transport acceptance; real-user endpoints remain disabled pending usable delivery review.
     - [ ] 3.4c.3 Usable delivery adapter, release blocklist evidence and actual recovery HTTP deployment/acceptance (separately gated).
+      - [x] 3.4c.3a Standalone local Gmail SMTP adapter, private configuration and transport tests; live credentials/acceptance pending.
+      - [ ] 3.4c.3b Release blocklist and reviewed real-service/HTTP wiring with provider-failure handling.
 - [ ] 3.5 Add own-profile edits and authentication security review.
 
 ## Phase 4 — Organizations and memberships
@@ -826,3 +828,11 @@ Added shared accessible recovery UI and four dynamic no-referrer pages. Outside 
 The owned Chromium fixture uses an in-memory routing bridge to the actual guarded recovery service and synthetic delivery sink. It exercises request, confirmation error/focus, reset, consumed-token replay rejection, new-password login and keyboard email verification, plus responsive axe scans and fragment cleanup. The bridge is test infrastructure, not a deployed HTTP recovery adapter. All three full browser scenarios passed, as did lint, strict typecheck, all 121 unit tests and the webpack production build. Mobile/desktop empty-form screenshots were visually inspected. A temporary owned production server confirmed all four pages are no-store with no mutation forms and all four recovery mutations return 404, even when the fixture UI flag is set. Servers and disposable database were stopped afterward.
 
 No real account, Atlas operation, email delivery, requirement change or push occurred. The approved synthetic recovery UI/transport slice is complete. Usable delivery, blocklist release evidence and actual recovery HTTP deployment remain explicitly gated under 3.4c.3; this test bridge is not production recovery acceptance.
+
+### Task 3.4c.3a implementation evidence — October 20, 2026
+
+The user authorized commit/push after each completed task, selected external email over a local inbox and supplied a Gmail sender. Pushed the previously completed auth/synthetic recovery checkpoint as b40c75f on origin/main. Added a standalone local Gmail SMTP adapter using pinned Nodemailer 10.1.7 and development types 8.0.2. The adapter validates local HTTPS/configuration, uses verified TLS to the fixed Gmail host, bounds network waits, disables sensitive SMTP/content logging and file/URL content loading, restricts each message to one recipient and a canonical purpose/origin-bound fragment link, and sanitizes errors without automatic send retries. Constructor/import remains network-free.
+
+Prepared non-secret sender fields and an empty app-password slot in ignored local settings, preserving existing entries. No private settings or certificates are staged. GMAIL_SETUP.md describes Google app-password requirements and the remaining integration/release gates. The adapter is not wired into public recovery or the test-only service; production recovery remains unavailable. An app password must be configured locally before any controlled live SMTP acceptance; no real email or SMTP authentication was attempted.
+
+Validation: lint, strict typecheck and all 129 unit tests passed, including eight SMTP-adapter cases with synthetic credentials and a mocked transport. Runtime-only dependency audit reported zero findings; the existing five high development lint-chain findings remain. No blanket native install-script approval or forced audit remediation was applied. The production webpack build passed for this checkpoint. Removed a pre-existing extra blank line in the extracted infrastructure contract. No Atlas operation or deployment occurred. Next is release blocklist evidence and reviewed real-service/HTTP wiring/provider-failure handling, with live credentials/acceptance still outstanding.

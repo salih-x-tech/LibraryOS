@@ -82,10 +82,12 @@ Vitest and Playwright provide unit, database integration and browser checks. Bro
 
 ## Project references
 
+- [Local Gmail delivery setup](docs/GMAIL_SETUP.md) — standalone adapter; real-user recovery remains disabled.
+
 - [Requirements](docs/SRS.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Implementation roadmap](docs/IMPLEMENTATION_PLAN.md)
 - [Next.js installation](https://nextjs.org/docs/app/getting-started/installation)
 - [Next.js ESLint configuration](https://nextjs.org/docs/app/api-reference/config/eslint)
 
-Work one task at a time. Task 3.3 local login/logout is complete; Task 3.4 activation/recovery is next and requires its outstanding policy decisions. Local test acceptance is not production/security release acceptance. Do not commit or push without explicit approval.
+Work one task at a time. Task 3.3 local login/logout is complete; Task 3.4 activation/recovery is next and requires its outstanding policy decisions. Local test acceptance is not production/security release acceptance. The user authorized committing and pushing each completed task on October 20, 2026; deployment remains separate.

@@ -39,5 +39,3 @@ export async function verifyInfrastructure(connection: Connection): Promise<void
     }
   }
 }
-
-

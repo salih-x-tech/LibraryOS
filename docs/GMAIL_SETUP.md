@@ -20,6 +20,16 @@ Call send only after issuance commits. There is no automatic send retry: a lost 
 
 ## Current acceptance and next integration
 
+The sender mailbox can be changed through GMAIL_USER in ignored .env.local without a code change. Its app password must belong to that same Google account. Changing the sender does not validate an existing credential or trigger a connection/send.
+
 Unit tests use a mocked SMTP transport and synthetic addresses/credentials. They cover credential/configuration rejection, lazy startup, readiness, recipient/header injection, purpose/origin validation, provider failure sanitization, acceptance checks and no automatic retries. No live Gmail verification or email has been performed. Google may still reject a credential/account or sender at runtime; these checks do not prove delivery/inbox placement.
 
 Real-user recovery remains disabled. Remaining work includes release blocklist provenance/coverage, guarded non-test service wiring, actual bounded/CSRF-protected recovery HTTP adapters, same-response account-enumeration defenses around provider failures, explicit deployment/readiness and controlled live acceptance. The sender/password alone does not approve hosted ingress or production release.
+
+## Local password-blocklist loading
+
+`loadPasswordBlocklist` is a lazy server-only loader for a separately reviewed local UTF-8 artifact. Configure AUTH_PASSWORD_BLOCKLIST_PATH as an absolute file path, AUTH_PASSWORD_BLOCKLIST_SHA256 as its lowercase SHA-256 and AUTH_PASSWORD_BLOCKLIST_SOURCE as a nonempty source/version reference. Hash the exact file bytes, including line endings, with PowerShell `Get-FileHash -Algorithm SHA256 -LiteralPath <path>` and lowercase the returned hash before configuring it. Changing line endings requires deliberately updating the pinned checksum after review.
+
+The file format is one whole password per line (LF or CRLF), no comment syntax, empty delimiter lines ignored and spaces preserved. The loader refuses missing/unreadable/non-regular files, checksum drift, invalid UTF-8, control characters, empty lists, files over 16 MiB and more than one million entries. Reads are bounded from one descriptor even if a file changes size during loading. A loaded validator keeps its snapshot; a reviewed list update requires service reinitialization. Errors are sanitized and there is no fallback list or network lookup.
+
+The checksum proves artifact integrity against the configured digest; the source string is an operator assertion, not proof of provenance or coverage. No release dataset has been supplied or approved by this loader task, and it is not wired into public recovery. Licensing, long/common/compromised-passphrase coverage, refresh cadence and review evidence still need an actual artifact. Tiny synthetic fixture lists are not a release blocklist. No user password or candidate digest is transmitted by the loader.

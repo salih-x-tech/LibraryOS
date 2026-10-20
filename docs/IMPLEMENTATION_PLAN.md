@@ -268,6 +268,7 @@ Atlas connectivity/credentials and production deployment were not exercised or p
     - [ ] 3.4c.3 Usable delivery adapter, release blocklist evidence and actual recovery HTTP deployment/acceptance (separately gated).
       - [x] 3.4c.3a Standalone local Gmail SMTP adapter, private configuration and transport tests; live credentials/acceptance pending.
       - [ ] 3.4c.3b Release blocklist and reviewed real-service/HTTP wiring with provider-failure handling.
+        - [x] 3.4c.3b.1 Checksum-pinned local blocklist loader and fail-closed artifact validation; release dataset not yet configured/reviewed.
 - [ ] 3.5 Add own-profile edits and authentication security review.
 
 ## Phase 4 — Organizations and memberships
@@ -836,3 +837,11 @@ The user authorized commit/push after each completed task, selected external ema
 Prepared non-secret sender fields and an empty app-password slot in ignored local settings, preserving existing entries. No private settings or certificates are staged. GMAIL_SETUP.md describes Google app-password requirements and the remaining integration/release gates. The adapter is not wired into public recovery or the test-only service; production recovery remains unavailable. An app password must be configured locally before any controlled live SMTP acceptance; no real email or SMTP authentication was attempted.
 
 Validation: lint, strict typecheck and all 129 unit tests passed, including eight SMTP-adapter cases with synthetic credentials and a mocked transport. Runtime-only dependency audit reported zero findings; the existing five high development lint-chain findings remain. No blanket native install-script approval or forced audit remediation was applied. The production webpack build passed for this checkpoint. Removed a pre-existing extra blank line in the extracted infrastructure contract. No Atlas operation or deployment occurred. Next is release blocklist evidence and reviewed real-service/HTTP wiring/provider-failure handling, with live credentials/acceptance still outstanding.
+
+### Task 3.4c.3b.1 implementation evidence — October 20, 2026
+
+The user changed the Gmail sender; updated only the ignored local GMAIL_USER value, retaining the existing sender display name and other configuration. The app-password field remains unconfigured; no SMTP authentication/send occurred. Personal sender values are not added to tracked source or examples.
+
+Added loadPasswordBlocklist as a lazy server-only local artifact loader with an absolute-path requirement, pinned SHA-256, required source/version reference, one-descriptor bounded read, 16-MiB/one-million-entry limits and strict UTF-8/control-character validation. It preserves spaces in whole-password entries and snapshots the existing approved validator. Missing/changed/invalid files fail closed with sanitized errors; there is no network request, candidate-password disclosure, fallback or automatic runtime activation. Source metadata does not certify provenance or coverage, and no release artifact has been configured/reviewed.
+
+Validation: lint, strict TypeScript and the 133-test unit suite passed; final focused loader tests cover checksummed whole-password behavior, significant spaces, missing configuration, relative paths/source rejection, checksum drift, malformed/oversized/empty files and immutable snapshots. Temporary cleanup is confined to owned fixture directories. This unused server module introduces no route/UI changes; browser/build suites were not repeated. Real recovery remains disabled pending the reviewed dataset, Gmail app credential, provider-failure handling and real HTTP integration. Commit/push is authorized after this completed task; no Atlas change or deployment occurred.

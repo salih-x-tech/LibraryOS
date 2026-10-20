@@ -126,5 +126,12 @@ export async function createMongoRateLimiter(connection: Connection, secret: Uin
     });
   }
 
-  return Object.freeze({ beginLogin, checkRequest });
+  async function checkCompletion(purpose: "verify-email" | "reset-password", trustedIp: string): Promise<void> {
+    return safe(async () => {
+      if (purpose !== "verify-email" && purpose !== "reset-password") throw new Error("Unsupported completion purpose.");
+      await consume(purpose === "verify-email" ? "verification.ip" : "reset.ip", normalizeTrustedIp(trustedIp));
+    });
+  }
+
+  return Object.freeze({ beginLogin, checkRequest, checkCompletion });
 }

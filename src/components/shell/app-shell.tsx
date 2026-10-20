@@ -51,7 +51,7 @@ export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
           </div>
         </aside>
         <div className="workspace-body">
-          <header className="topbar"><div className="breadcrumb"><span>Workspace</span><span aria-hidden="true">/</span><strong>Overview</strong></div><span className="preview-label"><span aria-hidden="true" />Workspace preview</span></header>
+          <header className="topbar"><div className="breadcrumb"><span>Workspace</span><span aria-hidden="true">/</span><strong>Overview</strong></div><a className="text-link" href="/login">Sign in</a><span className="preview-label"><span aria-hidden="true" />Workspace preview</span></header>
           {children}
           <footer className="page-footer"><span>LibraryOS</span><p>More room for books. More time for people.</p><span className="footer-ornament" aria-hidden="true">✦</span></footer>
         </div>

@@ -8,7 +8,8 @@ import { CSRF_HEADER_NAME, createCsrfProtection, type CsrfConfiguration } from "
 export const AUTH_CHALLENGE_COOKIE_NAME = "__Host-libraryos_auth_challenge";
 // Short-lived protocol nonce, not an authenticated account/session lifetime.
 export const AUTH_CHALLENGE_LIFETIME_MS = 5 * 60_000;
-type AuthPurpose = "login" | "logout";
+export type AuthPurpose = "login" | "logout" | "verification-request" | "verify-email" | "reset-request" | "reset-password";
+const purposes: readonly string[] = ["login", "logout", "verification-request", "verify-email", "reset-request", "reset-password"];
 const noncePattern = new RegExp(SESSION_TOKEN_PATTERN);
 const signedPattern = /^v1\.([1-9][0-9]{12})\.([A-Za-z0-9_-]{42}[AEIMQUYcgkosw048])$/;
 
@@ -25,7 +26,7 @@ export function createAuthCsrfProtection(configuration: CsrfConfiguration) {
   }
 
   function issue(purpose: AuthPurpose, sessionToken?: string) {
-    if (purpose !== "login" && purpose !== "logout") throw new Error("Invalid auth challenge purpose.");
+    if (!purposes.includes(purpose)) throw new Error("Invalid auth challenge purpose.");
     const nonce = randomBytes(32).toString("base64url");
     const expires = Date.now() + AUTH_CHALLENGE_LIFETIME_MS;
     return {
@@ -36,7 +37,7 @@ export function createAuthCsrfProtection(configuration: CsrfConfiguration) {
   }
 
   function assertMutation(request: Pick<Request, "method" | "headers">, nonce: string | null, purpose: AuthPurpose, sessionToken?: string): void {
-    if (purpose !== "login" && purpose !== "logout") throw new Error("Invalid auth challenge purpose.");
+    if (!purposes.includes(purpose)) throw new Error("Invalid auth challenge purpose.");
     if (request.method !== "POST") throw new ApplicationError("BAD_REQUEST");
     const token = request.headers.get(CSRF_HEADER_NAME);
     const parsed = token && token.length <= 64 ? signedPattern.exec(token) : null;

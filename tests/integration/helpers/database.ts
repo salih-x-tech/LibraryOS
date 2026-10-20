@@ -33,6 +33,7 @@ export async function startIsolatedDatabase() {
     }));
 
     return {
+      uri,
       databaseName,
       manager,
       async clear(): Promise<void> {

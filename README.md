@@ -1,6 +1,6 @@
 # LibraryOS
 
-LibraryOS is a multi-tenant library management SaaS. Phases 1–2 implementation is complete: public shell, server/database infrastructure, scoped query primitives, transactional audit/outbox and durable idempotency. Authentication, library domain models and APIs follow in later approved phases. Atlas schema deployment has not been performed; see [database development](docs/DEVELOPMENT.md).
+LibraryOS is a multi-tenant library management SaaS. Phases 1–2 and authentication through Task 3.3 are implemented: public shell, database infrastructure, scoped queries, transactional audit/outbox, durable idempotency and local HTTPS login/logout. The accessible sign-in page is at `/login`; activation/recovery and library domain workflows remain upcoming. Atlas schema deployment has not been performed; see [database development](docs/DEVELOPMENT.md).
 
 ## Prerequisites
 
@@ -74,11 +74,11 @@ The clean install also reports an unapproved `unrs-resolver` postinstall hook. N
 - `docs/`: approved SRS and architecture/implementation designs.
 - `.next/`, `next-env.d.ts`, `node_modules/` and TypeScript build info are generated and ignored. Do not edit generated files; development, type generation and builds recreate Next.js types.
 
-`src/server/config.ts` validates database settings; `src/server/db/connection.ts` owns the lazy per-process pool. Both are server-only. Later approved tasks add domain services in `src/modules/`, more infrastructure in `src/server/` and jobs in `src/workers/`. Handlers will call scoped services rather than query the database directly. Authentication, capabilities and tenant scope must be enforced before protected functionality is enabled.
+`src/server/config.ts` validates database settings; `src/server/db/connection.ts` owns the lazy per-process pool. Both are server-only. Later approved tasks add domain services in `src/modules/`, more infrastructure in `src/server/` and jobs in `src/workers/`. Handlers will call scoped services rather than query the database directly. The local auth flow is enabled only through the reviewed HTTPS configuration; tenant capabilities and scope must be enforced before library functionality is enabled.
 
 The shell uses Tailwind CSS 4, locally owned shadcn/ui Button/Card adaptations and Motion with reduced-motion support. It includes desktop/mobile navigation, a keyboard skip link, serif headings and forest-green/gold/ivory tokens. Library tools are labeled as upcoming; no live statistics or patron data is invented. See [UI foundations](docs/UI_FOUNDATION.md) and [source attribution](docs/THIRD_PARTY_NOTICES.md).
 
-Vitest and Playwright provide unit, database integration and browser checks. Browser checks include axe audits, mobile navigation, keyboard focus, reduced motion and 320/768/1440px layouts. These support the accessibility target without certifying full conformance. Mongoose and disposable real-database fixtures are included; domain models, public APIs, authentication, billing and library workflows remain deferred.
+Vitest and Playwright provide unit, database integration and browser checks. Browser checks include axe audits, mobile navigation, keyboard focus, reduced motion and 320/768/1440px layouts. These support the accessibility target without certifying full conformance. Mongoose and disposable real-database fixtures are included; tenant domain models/APIs, activation/recovery, billing and library workflows remain deferred.
 
 ## Project references
 
@@ -88,4 +88,4 @@ Vitest and Playwright provide unit, database integration and browser checks. Bro
 - [Next.js installation](https://nextjs.org/docs/app/getting-started/installation)
 - [Next.js ESLint configuration](https://nextjs.org/docs/app/api-reference/config/eslint)
 
-Work one task at a time. Phase 2, Task 2.1 is the current scope; Task 2.2 needs confirmation. Phase 1 review is not production/security release acceptance. Do not commit or push without explicit approval.
+Work one task at a time. Task 3.3 local login/logout is complete; Task 3.4 activation/recovery is next and requires its outstanding policy decisions. Local test acceptance is not production/security release acceptance. Do not commit or push without explicit approval.

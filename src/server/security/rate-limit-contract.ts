@@ -8,6 +8,8 @@ export const RATE_LIMIT_POLICIES = Object.freeze({
   "registration.account": Object.freeze({ limit: 3, windowMs: 60 * 60_000 }),
   "recovery.ip": Object.freeze({ limit: 5, windowMs: 60 * 60_000 }),
   "recovery.account": Object.freeze({ limit: 3, windowMs: 60 * 60_000 }),
+  "verification.ip": Object.freeze({ limit: 30, windowMs: 15 * 60_000 }),
+  "reset.ip": Object.freeze({ limit: 30, windowMs: 15 * 60_000 }),
 });
 export type RateLimitKind = keyof typeof RATE_LIMIT_POLICIES;
 export const BUCKET_COLLECTION = "rateLimitBuckets";

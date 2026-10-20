@@ -1,5 +1,20 @@
 @import "tailwindcss";
 
+.auth-header { display: flex; justify-content: space-between; gap: 1rem; padding: 1.5rem clamp(1rem, 5vw, 4rem); border-bottom: 1px solid var(--border); }
+.auth-header > span { color: var(--muted-foreground); }
+.auth-main { padding: clamp(1rem, 5vw, 4rem) 1rem; min-height: 85vh; }
+.auth-card { margin: 0 auto; max-width: 32rem; padding: clamp(1.25rem, 4vw, 3rem); background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
+.auth-card h1 { font: 2.3rem/1.15 Georgia, serif; margin: .75rem 0 1rem; }
+.auth-description, .auth-help { color: var(--muted-foreground); }
+.auth-fields { border: 0; padding: 0; margin: 0 0 1rem; display: flex; flex-direction: column; gap: .75rem; min-width: 0; }
+.auth-fields label { font-weight: 600; }
+.auth-fields input { width: 100%; min-height: 46px; border: 1px solid #81887a; border-radius: .4rem; padding: .65rem .75rem; background: var(--card); color: var(--foreground); font: inherit; }
+.auth-fields button { margin-top: .75rem; min-height: 46px; }
+.auth-error { color: #8c2424; background: #fff1ed; border: 1px solid #b45242; border-radius: .4rem; padding: .75rem; overflow-wrap: anywhere; }
+.auth-help { margin: 1.5rem 0; }
+.auth-notice:empty, .auth-card [role="alert"]:empty { margin: 0; }
+@media (max-width: 420px) { .auth-header > span { display: none; } }
+
 :root {
   --background: #f8f7f2;
   --foreground: #233c30;

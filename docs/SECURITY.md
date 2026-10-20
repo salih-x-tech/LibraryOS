@@ -28,6 +28,8 @@ Login verifies credentials and issues an opaque high-entropy cookie token while 
 
 ## Authorization and browser defenses
 
+Scoped activation/recovery policy was approved October 20, 2026: existing pending_verification accounts may verify with a 24-hour token; only active verified accounts may reset with a 30-minute token. Reissue invalidates older tokens of the same purpose; reset invalidates all action tokens and browser sessions, then requires normal login. Verification/recovery requests share the approved recovery budget. Each completion purpose has an independent 30/IP/15-minute budget. New passwords require 15–128 Unicode code points, exact-byte handling, a required local common/compromised blocklist and account/service-specific rejection, without forced character mixtures or periodic changes. Existing login validation remains compatible. See AUTH_RECOVERY_POLICY_PROPOSAL.md for the accepted scope. Implementation is restricted to synthetic fixtures with in-memory delivery; real-user endpoints, usable delivery, blocklist release evidence and other D02/D09 decisions remain gated.
+
 Apply PERMISSIONS.md in services, including Server Component reads, reports and jobs. Critical transactions touch shared authorization guards. Scope all tenant data access and joins; global operations use explicitly separate services. Deny support tenant-content inspection/impersonation until D07 approval.
 
 Require session-bound CSRF tokens and same-origin Origin validation for cookie-authenticated mutations, including login/logout where applicable. GET has no business side effects. SameSite alone is insufficient. Reject unsupported cross-origin credentialed requests. Future provider webhooks use verified signatures, not browser CSRF.

@@ -1,6 +1,6 @@
 # LibraryOS implementation roadmap
 
-Status: **Phases 1–2 and Phase 3 Tasks 3.1–3.2/3.3a–3.3b implementation are complete**. Task 3.3 remains open for local HTTPS/API/browser integration. Scoped login/session policy and local HTTPS on loopback were approved; hosted ingress remains gated. Infrastructure is validated on disposable MongoDB; Atlas schema deployment has not been performed. The user authorizes local commits after completed tasks and continuation; pushing still requires explicit approval.
+Status: **Phases 1–2 and Phase 3 Tasks 3.1–3.3 implementation are complete**. Task 3.4 policy, synthetic service orchestration and synthetic UI/transport acceptance are complete; usable delivery and real recovery HTTP deployment remain gated. Scoped login/session policy and local HTTPS on loopback were approved; hosted ingress remains gated. Infrastructure is validated on disposable MongoDB; Atlas schema deployment has not been performed. The user authorizes local commits after completed tasks and continuation; pushing still requires explicit approval.
 
 ## Sources and technical review
 
@@ -245,17 +245,27 @@ Atlas connectivity/credentials and production deployment were not exercised or p
   - [x] 3.2b Session resolution, current-user/version checks, rotation/revocation and expiry tests with explicit policy inputs.
   - [x] 3.2c Session-bound CSRF and trusted Origin validation with negative tests.
   - [x] 3.2d Approved MongoDB distributed limiter adapter/integration, storage/threshold/fail-closed tests (scoped D09 approval recorded).
-- [ ] 3.3 Add login/logout API and browser flow.
+- [x] 3.3 Add login/logout API and browser flow.
   - [x] 3.3a Enforce the approved login/session policy, idle/absolute expiry, browser cap and rotation-safe family logout.
   - [x] 3.3b Credential/limiter/session/audit login and logout service orchestration.
-  - [ ] 3.3c Pre-authentication CSRF/bootstrap, reviewed runtime configuration and thin API handlers.
+  - [x] 3.3c Pre-authentication CSRF/bootstrap, reviewed runtime configuration and thin API handlers.
     - [x] 3.3c.1 Purpose-bound pre-login/logout CSRF challenge primitives and tests.
     - [x] 3.3c.2 Local HTTPS launcher/setup and configuration validation.
-    - [ ] 3.3c.3 Explicit auth deployment/readiness and API handlers.
+    - [x] 3.3c.3 Explicit auth deployment/readiness and API handlers.
       - [x] 3.3c.3a Shared read-only identity/session storage contracts and readiness tests.
-      - [ ] 3.3c.3b Explicit auth deployment command, runtime initialization and thin API handlers.
-  - [ ] 3.3d Accessible browser login/logout flow and end-to-end security checks.
+      - [x] 3.3c.3b Explicit auth deployment command, runtime initialization and thin API handlers.
+        - [x] 3.3c.3b.1 Explicit auth deployment command and disposable-database checks.
+        - [x] 3.3c.3b.2 Runtime initialization and thin API handlers.
+        - [x] 3.3c.3b.3 Full local HTTPS/browser integration acceptance.
+  - [x] 3.3d Accessible browser login/logout flow and end-to-end security checks.
 - [ ] 3.4 Add approved activation/recovery with development delivery.
+  - [x] 3.4a Purpose-bound hashed token storage, explicit expiry and transactional single-use consumption primitives.
+  - [x] 3.4b Resolve password/activation/recovery policies and development delivery contract.
+    - [x] User selected the proposed password/account/token policy and synthetic-only delivery scope in AUTH_RECOVERY_POLICY_PROPOSAL.md on October 20, 2026.
+  - [ ] 3.4c Guarded activation/reset orchestration, reviewed deployment and API/browser integration.
+    - [x] 3.4c.1 Test-only guarded services, password rules, shared request/completion limits and synthetic delivery integration.
+    - [x] 3.4c.2 Synthetic UI/transport acceptance; real-user endpoints remain disabled pending usable delivery review.
+    - [ ] 3.4c.3 Usable delivery adapter, release blocklist evidence and actual recovery HTTP deployment/acceptance (separately gated).
 - [ ] 3.5 Add own-profile edits and authentication security review.
 
 ## Phase 4 — Organizations and memberships
@@ -768,3 +778,51 @@ No auth API, schema deployment, real account or Atlas operation occurred. No dep
 Moved the existing identity/session validator and index contracts into src/modules/auth/identity-storage.ts and session-storage.ts. Deployment helpers reuse these contracts and retain their existing exports. New verifyUserIdentity/verifySessions functions inspect storage without creating collections, changing validators or repairing indexes; inspection commands have five-second timeouts. Runtime code can now verify these prerequisites without importing deployment scripts. This is a prerequisite slice; API handlers and the separate auth deployment command remain incomplete.
 
 Validation: lint and strict TypeScript passed. All 12 tests across identity storage, session storage and the new readiness suite passed against an owned disposable loopback MongoDB replica set. Readiness tests cover absent storage, unchanged valid definitions, weakened validation and missing uniqueness/TTL indexes. The sandbox prevented MongoDB startup; the same isolated tests passed outside the sandbox. No Atlas connection, real account, requirement change or push occurred. Local HTTPS on loopback remains the approved initial environment; hosted ingress is pending approval.
+
+### Task 3.3c.3b.1 implementation evidence — October 20, 2026
+
+Added a separate explicit auth deployment CLI and composition helper for identity, sessions and shared limiter storage. Phase 2 infrastructure must already verify before auth provisioning starts. Plan opens no connection; apply/verify require an exact configured database-name confirmation, redact failures and close their connection. Apply uses existing non-destructive helpers and is sequential, not atomic; partial failures require operator review. The original Phase 2 command is unchanged.
+
+Validation: lint, strict TypeScript, no-connection plan and three focused integration tests passed. Tests prove prerequisite refusal without provisioning, repeat deployment, read-only missing-index rejection and preservation/refusal of incompatible existing identity data. MongoDB could not start in the sandbox; the same suite passed outside it using the owned disposable loopback replica set. No Atlas deployment, real-account mutation or push occurred. Runtime initialization/API handlers remain the next slice; Task 3.3 stays open.
+
+### Task 3.3c.3b.2 implementation evidence — October 20, 2026
+
+Added local-only challenge/login/logout Route Handlers and lazy cached service initialization. Initialization checks existing infrastructure, identity, session and limiter contracts without deployment writes, resets failed initialization for retry, and maps startup failures to sanitized 503 responses. Moved shared infrastructure validators/readiness into server-owned files while preserving script exports. No credentials are required during build.
+
+Challenge bootstrap requires same-origin browser fetch metadata and rejects foreign Origin headers. Login/logout require the purpose-bound challenge and exact configured Origin before bounded streamed JSON parsing or database initialization. Login projects only the user DTO, uses the fixed loopback limiter identity regardless of forwarded headers, and sets session cookies after service success. Logout clears cookies only after successful audited revocation. Next.js normalizes loopback request URLs to localhost, so trust comes from explicit launcher configuration and browser Origin rather than request URL/Host headers.
+
+Validation: lint, typecheck, all 113 unit tests and 72 tests across auth/shared-storage integration suites passed. Integration used owned disposable MongoDB outside the sandbox. Production build passed with the supported webpack builder, including all three dynamic API routes. The default Turbopack build failed in its CSS worker both inside and outside the sandbox; it remains an unresolved tooling limitation, and the default command was not changed. Diff whitespace check passed after cleanup. No Atlas deployment, real-account mutation or push occurred. Full local HTTPS/browser login acceptance remains open as the next slice; these results do not complete Task 3.3.
+
+### Task 3.3c.3b.3 implementation evidence — October 20, 2026
+
+Added a dedicated real Chromium HTTPS acceptance suite and test:auth:browser command, separate from ordinary unit/database/browser-shell suites. The fixture refuses occupied loopback port 3102, explicitly provisions an owned disposable MongoDB replica set and synthetic verified account, overrides child database configuration, generates ephemeral signing keys and uses the existing local certificate. Next development runs with webpack because of the previously recorded Turbopack worker failure. The readiness client trusts only the generated certificate; certificate acceptance is scoped to the isolated Chromium context. No machine trust settings change. Cleanup closes Chromium, the owned server process tree and disposable MongoDB.
+
+The real browser verifies same-origin bootstrap and cookie transport, missing-CSRF denial, generic wrong/unknown credential responses, successful audited login without token DTO leakage, Secure/HttpOnly session flags and document.cookie privacy, database token hashing, audited logout and cookie deletion. Forced audit rejection proves 503 preserves cookies and rolls back revocation; after restoring storage, the same logout succeeds. Repeated failed credentials prove actual 429 responses with positive Retry-After. The final browser run passed. Lint and strict typecheck passed for this checkpoint. No Atlas deployment, real account, external service or push occurred. This completes 3.3c transport acceptance; 3.3d accessible browser login/logout UI remains next.
+
+### Task 3.3d implementation evidence — October 20, 2026
+
+Added /login with a server-side cookie/session check and a client sign-in/sign-out panel using the reviewed challenge protocol. It includes labeled native validation, password-manager autocomplete, pending/duplicate-submit protection, generic credential and service errors, Retry-After feedback, password clearing on failure and focused error/success announcements. Explicit POST form actions prevent pre-hydration credentials entering URLs. Refresh resolves the current session; stale/inactive cookies retain a browser sign-out action. A store failure never claims authenticated state. The signed-in confirmation grants no tenant capabilities or library access. The public shell links to sign-in.
+
+Extended the real HTTPS browser suite with UI acceptance at 320/768/1440px, no-overflow checks for both shell and login, axe A/AA scans, keyboard skip-link/error/success focus, wrong-password recovery, successful sign-in, refresh persistence and keyboard logout. Both complete API and UI scenarios passed; no browser page errors occurred. Signed-out desktop/mobile screenshots were visually inspected. Lint, strict typecheck and all 113 unit tests passed; the production webpack build passed with /login rendered dynamically. These are Chromium accessibility checks, not full screen-reader or cross-browser conformance certification. No real account, Atlas deployment, push or requirement change occurred. Task 3.3 is complete for the approved local HTTPS target. Next is Task 3.4 activation/recovery, subject to its outstanding policy decisions.
+
+### Task 3.4a implementation evidence — October 20, 2026
+
+Added purpose-bound 256-bit authentication action credentials, a hash-only token model/strict database contract and explicit deployment helper, plus transaction-only issuance/consumption primitives. Callers must supply an explicit future expiry and user/session-version snapshot. Atomic conditional consumption checks database-time expiry and cannot succeed twice; rollback restores availability. No account mutation, eligibility decision, password policy, default token lifetime, development delivery or endpoint is enabled. The existing login deployment/runtime remains unchanged; future use cases must enforce account eligibility/version guards and atomically compose token/account/session/audit changes.
+
+Validation: lint, strict typecheck and all 115 unit tests passed. All seven focused disposable MongoDB integration tests passed, covering purpose isolation, private hash projection/no raw credential persistence, concurrent single-use consumption, expiry before TTL cleanup, transaction rollback, required transactions/explicit valid input, repeat/read-only readiness and database rejection of raw-token/authority/invalid-purpose fields and duplicate hashes. No browser/build rerun was needed because this unexposed server-only slice is not imported by application routes. No Atlas deployment, real account, email, dependency change or push occurred. Task 3.4 remains open for its policy decisions and guarded recovery integration.
+
+### Task 3.4b / 3.4c.1 implementation evidence — October 20, 2026
+
+The user explicitly selected the proposed 15–128-code-point new-password rules, account/token policy and synthetic in-memory delivery boundary. Recorded approval in AUTH_RECOVERY_POLICY_PROPOSAL.md and SECURITY.md. Added required local blocklist validation, exact-byte handling, current-password reuse rejection and service/account-specific rejection without altering existing login validation. Added independent shared completion budgets (30/IP/15 minutes per purpose); verification and reset requests share the approved recovery request budget. The updated strict limiter validator requires explicit reviewed redeployment on an existing database; no deployment was performed outside fixtures.
+
+Added createTestRecoveryService restricted to test mode and loopback libraryos_test_ databases. Request eligibility, user-fenced reissue, 24-hour verification/30-minute reset expiry and issuance audit commit before the injected in-memory sink receives a fragment link. Readiness is checked for all requests; send failures after commit are sanitized but cannot be treated as rolled-back issuance. Completion checks the stored token/user snapshot, guards current password/account/version, atomically consumes tokens and commits account/session/audit changes. Reset revokes every browser and all action tokens; verification only activates an existing pending account and creates no session or membership. No real-user runtime/route or mail provider is enabled; synthetic delivery is not a public timing/enumeration-resistance or durable-delivery claim.
+
+Validation: lint, strict typecheck, all 118 unit tests, 38 affected recovery/rate-limit/login/deployment integration tests and the webpack production build passed. Integration covers reissue, concurrent single-winner reset, eligibility/version changes, password reuse, generic unknown/ineligible outcomes, shared request budgets, completion limits before lookup, delivery after commit/failure, and token/account rollback after audit rejection. Both existing real HTTPS browser regression scenarios also passed, including login/logout and accessibility. No real account, Atlas change, external delivery, new dependency or push occurred. Next is synthetic recovery UI/transport acceptance; real-user endpoints remain disabled pending usable delivery review and blocklist release evidence.
+
+### Task 3.4c.2 implementation evidence — October 20, 2026
+
+Added shared accessible recovery UI and four dynamic no-referrer pages. Outside a strictly gated synthetic fixture they display only availability notices. Enabled forms use purpose-bound challenge requests, explicit POST submission, password confirmation, pending protection and focused feedback. Fragment tokens are scrubbed before challenge fetches and kept only in memory; browser testing exposed and fixed React Strict Mode double-effect capture and same-page hash navigation after completion. No token enters web storage or hidden fields. Recovery challenge purposes are added to the shared primitive, while the real challenge HTTP endpoint still permits only login/logout.
+
+The owned Chromium fixture uses an in-memory routing bridge to the actual guarded recovery service and synthetic delivery sink. It exercises request, confirmation error/focus, reset, consumed-token replay rejection, new-password login and keyboard email verification, plus responsive axe scans and fragment cleanup. The bridge is test infrastructure, not a deployed HTTP recovery adapter. All three full browser scenarios passed, as did lint, strict typecheck, all 121 unit tests and the webpack production build. Mobile/desktop empty-form screenshots were visually inspected. A temporary owned production server confirmed all four pages are no-store with no mutation forms and all four recovery mutations return 404, even when the fixture UI flag is set. Servers and disposable database were stopped afterward.
+
+No real account, Atlas operation, email delivery, requirement change or push occurred. The approved synthetic recovery UI/transport slice is complete. Usable delivery, blocklist release evidence and actual recovery HTTP deployment remain explicitly gated under 3.4c.3; this test bridge is not production recovery acceptance.

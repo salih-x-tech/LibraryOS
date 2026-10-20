@@ -11,6 +11,17 @@ function request(token: string, changes: Record<string, string> = {}) {
 afterEach(() => { vi.useRealTimers(); });
 
 describe("auth bootstrap CSRF", () => {
+  it("isolates recovery requests and completion challenges from each other and login", () => {
+    const purposes = ["login", "verification-request", "verify-email", "reset-request", "reset-password"] as const;
+    for (const purpose of purposes) {
+      const challenge = csrf.issue(purpose);
+      for (const destination of purposes) {
+        const assertion = () => csrf.assertMutation(request(challenge.token), challenge.cookie.value, destination);
+        if (purpose === destination) expect(assertion).not.toThrow();
+        else expect(assertion).toThrow();
+      }
+    }
+  });
   it("uses an HttpOnly pre-session nonce without pretending to authenticate a user", () => {
     const challenge = csrf.issue("login");
     expect(challenge.cookie).toMatchObject({ name: "__Host-libraryos_auth_challenge", secure: true, httpOnly: true, sameSite: "strict", path: "/" });

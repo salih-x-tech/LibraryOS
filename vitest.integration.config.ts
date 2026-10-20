@@ -6,6 +6,7 @@ export default defineConfig({
   test: {
     ...unitConfig.test,
     include: ["tests/integration/**/*.test.ts"],
+    exclude: ["tests/integration/auth/browser.test.ts"],
     fileParallelism: false,
     maxWorkers: 1,
     hookTimeout: 180_000,

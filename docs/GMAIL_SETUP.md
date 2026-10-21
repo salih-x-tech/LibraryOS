@@ -20,6 +20,10 @@ Call send only after issuance commits. There is no automatic send retry: a lost 
 
 ## Current acceptance and next integration
 
+The internal `getLocalRecoveryService` now composes local HTTPS settings, Gmail configuration, the checksum-pinned blocklist, existing infrastructure/identity/session/limiter readiness and the shared guarded recovery orchestration. It validates mail/blocklist settings before opening database access, shares concurrent initialization and permits retry after initialization failure. Initialization never verifies SMTP credentials or sends mail. Failed service initialization closes its mail adapter. Configuration/list changes require restarting the server to replace the successful cached snapshot.
+
+`createTestRecoveryService` retains its synthetic database guard; `createLocalRecoveryService` separately requires the approved local HTTPS configuration and a Gmail adapter plus prevalidated password validator. Both use the same token/account/session/audit transaction implementation. These factories are internal service boundaries, not safe public HTTP handlers. No route imports the recovery runtime: provider-specific send failures can still differ by account eligibility and must be addressed before exposing requests. Missing local credentials or a reviewed list remain SERVICE_UNAVAILABLE; there is no permissive fallback.
+
 The sender mailbox can be changed through GMAIL_USER in ignored .env.local without a code change. Its app password must belong to that same Google account. Changing the sender does not validate an existing credential or trigger a connection/send.
 
 Unit tests use a mocked SMTP transport and synthetic addresses/credentials. They cover credential/configuration rejection, lazy startup, readiness, recipient/header injection, purpose/origin validation, provider failure sanitization, acceptance checks and no automatic retries. No live Gmail verification or email has been performed. Google may still reject a credential/account or sender at runtime; these checks do not prove delivery/inbox placement.

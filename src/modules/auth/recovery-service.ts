@@ -16,6 +16,7 @@ import { normalizeEmail } from "./validation";
 import { hashPassword, verifyPassword } from "./passwords";
 import { createNewPasswordValidator } from "./new-password";
 import { RESET_LIFETIME_MS, VERIFICATION_LIFETIME_MS } from "./recovery-policy";
+import { readLocalAuthConfiguration } from "@/server/auth-config";
 
 type Limiter = Pick<Awaited<ReturnType<typeof createMongoRateLimiter>>, "checkRequest" | "checkCompletion">;
 export type TestRecoveryDelivery = Readonly<{
@@ -30,10 +31,27 @@ export async function createTestRecoveryService(connection: Connection, limiter:
   configuration: Readonly<{ origin: string; blocklist: readonly string[] }>) {
   if (process.env.NODE_ENV !== "test" || delivery.kind !== "synthetic-memory"
     || connection.host !== "127.0.0.1" || !connection.name.startsWith("libraryos_test_")) throw new ApplicationError("SERVICE_UNAVAILABLE");
+  return createRecoveryService(connection, limiter, delivery, { origin: configuration.origin, validatePassword: createNewPasswordValidator(configuration.blocklist) });
+}
+
+// Internal local-runtime entry point, not an HTTP boundary. The caller supplies
+// a checksum-verified validator and a configured provider adapter. Provider
+// failures must be handled without account enumeration before routes are added.
+export async function createLocalRecoveryService(connection: Connection, limiter: Limiter,
+  delivery: Readonly<{ kind: "gmail-smtp"; ready: () => Promise<void>; send: TestRecoveryDelivery["send"] }>,
+  validatePassword: ReturnType<typeof createNewPasswordValidator>) {
+  const configuration = readLocalAuthConfiguration();
+  if (delivery.kind !== "gmail-smtp" || typeof validatePassword !== "function") throw new ApplicationError("SERVICE_UNAVAILABLE");
+  return createRecoveryService(connection, limiter, delivery, { origin: configuration.origin, validatePassword });
+}
+
+async function createRecoveryService(connection: Connection, limiter: Limiter,
+  delivery: Pick<TestRecoveryDelivery, "ready" | "send">,
+  configuration: Readonly<{ origin: string; validatePassword: ReturnType<typeof createNewPasswordValidator> }>) {
   const origin = new URL(configuration.origin);
   if (origin.protocol !== "https:" || origin.hostname !== "127.0.0.1" || origin.origin !== configuration.origin) throw new ApplicationError("SERVICE_UNAVAILABLE");
   await verifyActionTokens(connection);
-  const validatePassword = createNewPasswordValidator(configuration.blocklist);
+  const validatePassword = configuration.validatePassword;
   const users = getUserModel(connection);
   const tokens = getActionTokenModel(connection);
   const sessions = getSessionModel(connection);

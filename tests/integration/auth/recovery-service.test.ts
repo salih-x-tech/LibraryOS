@@ -3,7 +3,8 @@ import { startIsolatedDatabase } from "../helpers/database";
 import { deployInfrastructure } from "../../../scripts/db/indexes";
 import { deployAuthStorage } from "../../../scripts/db/auth";
 import { deployActionTokens } from "../../../scripts/db/action-tokens";
-import { createTestRecoveryService } from "@/modules/auth/recovery-service";
+import { createLocalRecoveryService, createTestRecoveryService } from "@/modules/auth/recovery-service";
+import { createNewPasswordValidator } from "@/modules/auth/new-password";
 import { createMongoRateLimiter } from "@/server/security/rate-limit";
 import { getUserModel } from "@/modules/auth/user-model";
 import { hashPassword, verifyPassword } from "@/modules/auth/passwords";
@@ -158,4 +159,19 @@ it("refuses a newly suspended account without consuming its token", async () => 
   await getUserModel(connection).updateOne({}, { $set: { status: "suspended" } });
   await expect(service.complete("reset-password", token(), ip, context(), newPassword)).rejects.toMatchObject({ code: "BAD_REQUEST" });
   expect(await connection.db!.collection("authActionTokens").countDocuments({ consumedAt: { $exists: false } })).toBe(1);
+});
+
+it("uses the same guarded orchestration through the configured local provider factory", async () => {
+  const connection = await fixture.manager.get();
+  vi.stubEnv("NODE_ENV", "development"); vi.stubEnv("LIBRARYOS_LOCAL_HTTPS", "1");
+  vi.stubEnv("AUTH_ORIGIN", "https://127.0.0.1:3102");
+  vi.stubEnv("AUTH_CSRF_KEY", "ab".repeat(32)); vi.stubEnv("AUTH_RATE_LIMIT_KEY", "cd".repeat(32));
+  try {
+    const local = await createLocalRecoveryService(connection, limiter, { kind: "gmail-smtp", ready, send },
+      createNewPasswordValidator(["a compromised test phrase"]));
+    expect(ready).not.toHaveBeenCalled(); expect(send).not.toHaveBeenCalled();
+    await local.request("reset-password", email, ip, context());
+    await local.complete("reset-password", token(), ip, context(), newPassword);
+    expect(await connection.db!.collection("auditEvents").countDocuments({ action: "auth.passwordReset" })).toBe(1);
+  } finally { vi.unstubAllEnvs(); }
 });

@@ -26,12 +26,20 @@ export function RecoveryPanel({ mode, enabled }: Readonly<{ mode: RecoveryMode; 
     // Clear all fragment/query content before any challenge/network operation.
     window.history.replaceState(null, "", window.location.pathname);
     const receiveLink = () => {
-      token.current = new URLSearchParams(window.location.hash.slice(1)).get("token") ?? "";
+      const incoming = new URLSearchParams(window.location.hash.slice(1));
+      // Same-document navigation can emit popstate and hashchange. The first
+      // event scrubs the URL; the second must not erase its captured token.
+      if (!incoming.has("token")) return;
+      token.current = incoming.get("token") ?? "";
       window.history.replaceState(null, "", window.location.pathname);
       setDone(false); setError(""); setNotice("");
     };
     window.addEventListener("hashchange", receiveLink);
-    return () => window.removeEventListener("hashchange", receiveLink);
+    window.addEventListener("popstate", receiveLink);
+    return () => {
+      window.removeEventListener("hashchange", receiveLink);
+      window.removeEventListener("popstate", receiveLink);
+    };
   }, [completion]);
 
   async function act(event: FormEvent<HTMLFormElement>) {

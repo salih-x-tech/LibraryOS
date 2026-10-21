@@ -8,6 +8,7 @@ import { AUTH_CHALLENGE_COOKIE_NAME, clearedAuthChallengeCookie, createAuthCsrfP
 import { SESSION_COOKIE_NAME } from "@/modules/auth/session-format";
 import { clearedSessionCookie, sessionCookie } from "@/modules/auth/sessions";
 import { validateLoginInput } from "@/modules/auth/validation";
+import { readBoundedJson } from "./http/json-body";
 
 function configuration() {
   let config;
@@ -15,25 +16,6 @@ function configuration() {
   // Next normalizes loopback request URLs to localhost. Trust only explicit
   // launcher configuration and the browser Origin checks below, never that URL.
   return { config, csrf: createAuthCsrfProtection({ origin: config.origin, secret: config.csrfKey }) };
-}
-
-// Bound actual streamed bytes, including chunked requests with no Content-Length.
-async function jsonBody(request: NextRequest): Promise<unknown> {
-  const reader = request.body?.getReader();
-  if (!reader) throw new ApplicationError("BAD_REQUEST");
-  const chunks: Uint8Array[] = [];
-  let size = 0;
-  try {
-    while (true) {
-      const next = await reader.read();
-      if (next.done) break;
-      size += next.value.byteLength;
-      if (size > 16_384) { await reader.cancel(); throw new ApplicationError("BAD_REQUEST"); }
-      chunks.push(next.value);
-    }
-    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(Buffer.concat(chunks)));
-  } catch { throw new ApplicationError("BAD_REQUEST"); }
-  finally { reader.releaseLock(); }
 }
 
 export async function authChallenge(request: NextRequest): Promise<Response> {
@@ -60,7 +42,7 @@ export async function authMutation(request: NextRequest, purpose: "login" | "log
     const { csrf } = configuration();
     const token = request.cookies.get(SESSION_COOKIE_NAME)?.value ?? "";
     csrf.assertMutation(request, request.cookies.get(AUTH_CHALLENGE_COOKIE_NAME)?.value ?? null, purpose, token);
-    const body = await jsonBody(request);
+    const body = await readBoundedJson(request);
     if (purpose === "login") validateLoginInput(body);
     else if (!body || typeof body !== "object" || Array.isArray(body) || Object.keys(body).length !== 0) throw new ApplicationError("BAD_REQUEST");
     const service = await getAuthService();

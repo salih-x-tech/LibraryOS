@@ -79,7 +79,7 @@ beforeAll(async () => {
     "--experimental-https-cert", resolve(".local/https/localhost-cert.pem")], {
     env: { ...process.env, NODE_ENV: "development", LIBRARYOS_LOCAL_HTTPS: "1", AUTH_ORIGIN: origin,
       AUTH_CSRF_KEY: randomBytes(32).toString("hex"), AUTH_RATE_LIMIT_KEY: randomBytes(32).toString("hex"),
-      MONGODB_URI: fixture.uri, MONGODB_DB_NAME: fixture.databaseName, LIBRARYOS_SYNTHETIC_RECOVERY_UI: "1" },
+      MONGODB_URI: fixture.uri, MONGODB_DB_NAME: fixture.databaseName, LIBRARYOS_SYNTHETIC_RECOVERY_UI: "1", AUTH_RECOVERY_COMPLETION_HTTP: "" },
     windowsHide: true, stdio: "ignore",
   });
   await ready();
@@ -276,7 +276,7 @@ it("exercises recovery UI with synthetic in-memory transport, fragment cleanup a
     expect(pageErrors).toEqual([]);
     // APIRequest bypasses browser routing: prove that the app exposes no real
     // recovery mutation even while synthetic UI is enabled in this fixture.
-    expect((await context.request.post(`${origin}/api/v1/auth/reset-password`, { data: {} })).status()).toBe(404);
+    expect((await context.request.post(`${origin}/api/v1/auth/reset-password`, { data: {} })).status()).toBe(503);
   } finally { await context.close(); }
 }, 120_000);
 

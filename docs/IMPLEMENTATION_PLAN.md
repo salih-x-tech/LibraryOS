@@ -274,6 +274,7 @@ Atlas connectivity/credentials and production deployment were not exercised or p
         - [ ] 3.4c.3b.4 Account-enumeration-safe request delivery boundary and actual enabled end-to-end/live acceptance.
           - [x] 3.4c.3b.4a Encrypted, account-independent request admission queue and transaction/readiness tests; not exposed or deployed.
           - [ ] 3.4c.3b.4b Reviewed worker lifecycle/retention and request HTTP integration; live credentials/list acceptance remains required.
+            - [x] Concrete lifecycle/retention proposal prepared in RECOVERY_WORKER_POLICY_PROPOSAL.md for the remaining D08/D09 choices.
 - [ ] 3.5 Add own-profile edits and authentication security review.
 
 ## Phase 4 — Organizations and memberships

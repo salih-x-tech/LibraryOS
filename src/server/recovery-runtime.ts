@@ -13,7 +13,7 @@ import { ApplicationError } from "./http/errors";
 
 let pending: Promise<Awaited<ReturnType<typeof createLocalRecoveryService>>> | undefined;
 
-// Deliberately not imported by a Route Handler. Construction validates local
+// Used only by explicitly gated completion handlers. Construction validates local
 // config/storage but never authenticates to Gmail or sends email on startup.
 export async function getLocalRecoveryService() {
   try {

@@ -1,8 +1,8 @@
 import "server-only";
 import type { Connection } from "mongoose";
 import { ApplicationError } from "@/server/http/errors";
-import { runTransaction } from "@/server/db/transaction";
-import { requestId } from "@/server/db/persistence";
+import { runTransaction, type TransactionContext } from "@/server/db/transaction";
+import { requestId, requireTransaction } from "@/server/db/persistence";
 import type { RequestContext } from "@/server/http/responses";
 import { appendAudit } from "@/modules/audit/append";
 import type { createMongoRateLimiter } from "@/server/security/rate-limit";
@@ -36,7 +36,7 @@ export async function createTestRecoveryService(connection: Connection, limiter:
 
 // Internal local-runtime entry point, not an HTTP boundary. The caller supplies
 // a checksum-verified validator and a configured provider adapter. Provider
-// failures must be handled without account enumeration before routes are added.
+// failures must be handled without account enumeration before request routes are added.
 export async function createLocalRecoveryService(connection: Connection, limiter: Limiter,
   delivery: Readonly<{ kind: "gmail-smtp"; ready: () => Promise<void>; send: TestRecoveryDelivery["send"] }>,
   validatePassword: ReturnType<typeof createNewPasswordValidator>) {
@@ -75,24 +75,33 @@ async function createRecoveryService(connection: Connection, limiter: Limiter,
       const correlation = requestId(context.requestId);
       await limiter.checkRequest("recovery", normalized, ip);
       await delivery.ready(); // Same readiness check for unknown/ineligible email.
-      const message = await runTransaction(connection, async (transaction) => {
-        const user = await users.findOneAndUpdate({ normalizedEmail: normalized, ...eligibility(purpose), operationFence: { $lt: Number.MAX_SAFE_INTEGER } },
-          { $inc: { operationFence: 1 } }, { session: transaction.session, returnDocument: "after", runValidators: true }).lean().exec();
-        if (!user) return null;
-        // Touching the shared user guard serializes reissue with reset/login.
-        await tokens.updateMany({ userId: user._id, purpose, consumedAt: { $exists: false } },
-          { $currentDate: { consumedAt: true } }, { session: transaction.session }).exec();
-        const issued = await store.issue(transaction, { userId: user._id.toHexString(), sessionVersion: user.sessionVersion }, purpose,
-          new Date(Date.now() + (purpose === "verify-email" ? VERIFICATION_LIFETIME_MS : RESET_LIFETIME_MS)));
-        await appendAudit(connection, transaction, { scope: { kind: "global" }, actor: { systemIdentity: "authRecovery" },
-          action: "auth.tokenRequested", resourceType: "user", resourceId: user._id.toHexString(), branchIds: [], requestId: correlation,
-          changedFields: ["actionToken"] });
-        return { email: normalized, purpose, url: `${origin.origin}/${purpose}#token=${issued.token}` };
-      });
+      const message = await runTransaction(connection, (transaction) => issueForDelivery(transaction, purpose, normalized, { requestId: correlation }));
       // Never deliver from a retriable transaction callback. A post-commit send
       // failure is surfaced; a fresh request may reissue, subject to shared limits.
       if (message) await delivery.send(message);
     });
+  }
+
+  // Internal transaction primitive for a worker processing a persisted,
+  // already-rate-limited intent. Its caller must fence the live queue lease in
+  // this same transaction. Never expose this primitive in a request handler.
+  async function issueForDelivery(transaction: TransactionContext, purpose: ActionTokenPurpose, email: string, context: RequestContext) {
+    requireTransaction(transaction);
+    hashActionToken(purpose, "");
+    const normalized = normalizeEmail(email);
+    const correlation = requestId(context.requestId);
+    const user = await users.findOneAndUpdate({ normalizedEmail: normalized, ...eligibility(purpose), operationFence: { $lt: Number.MAX_SAFE_INTEGER } },
+      { $inc: { operationFence: 1 } }, { session: transaction.session, returnDocument: "after", runValidators: true }).lean().exec();
+    if (!user) return null;
+    // Touching the shared user guard serializes reissue with reset/login.
+    await tokens.updateMany({ userId: user._id, purpose, consumedAt: { $exists: false } },
+      { $currentDate: { consumedAt: true } }, { session: transaction.session }).exec();
+    const issued = await store.issue(transaction, { userId: user._id.toHexString(), sessionVersion: user.sessionVersion }, purpose,
+      new Date(Date.now() + (purpose === "verify-email" ? VERIFICATION_LIFETIME_MS : RESET_LIFETIME_MS)));
+    await appendAudit(connection, transaction, { scope: { kind: "global" }, actor: { systemIdentity: "authRecovery" },
+      action: "auth.tokenRequested", resourceType: "user", resourceId: user._id.toHexString(), branchIds: [], requestId: correlation,
+      changedFields: ["actionToken"] });
+    return { email: normalized, purpose, url: `${origin.origin}/${purpose}#token=${issued.token}` };
   }
 
   async function complete(purpose: ActionTokenPurpose, token: string, ip: string, context: RequestContext, newPassword?: unknown): Promise<void> {
@@ -127,5 +136,5 @@ async function createRecoveryService(connection: Connection, limiter: Limiter,
       });
     });
   }
-  return Object.freeze({ request, complete });
+  return Object.freeze({ request, complete, issueForDelivery });
 }

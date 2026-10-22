@@ -29,6 +29,7 @@ export async function createRecoveryRequestQueue(connection: Connection,
       const identity = new Types.ObjectId();
       await runTransaction(connection, async (transaction) => {
         await requests.insertOne({ _id: identity, purpose, requestId: correlation, ...sealed, status: "pending", createdAt: new Date() }, { session: transaction.session });
+        await requests.updateOne({ _id: identity }, [{ $set: { createdAt: "$$NOW" } }], { session: transaction.session });
         await appendAudit(connection, transaction, { scope: { kind: "global" }, actor: { systemIdentity: "authRecovery" },
           action: "auth.recoveryRequested", resourceType: "recoveryRequest", resourceId: identity.toHexString(), branchIds: [], requestId: correlation,
           changedFields: ["request"] });

@@ -1,6 +1,6 @@
 # Recovery worker lifecycle and retention proposal
 
-Status: **PENDING USER DECISION**. Prepared October 22, 2026. This document proposes the remaining queue retry/retention choices under D08/D09. It changes no runtime behavior, deletes no records and enables no worker, email request endpoint or live send.
+Status: **APPROVED FOR SYNTHETIC IMPLEMENTATION** on October 22, 2026. The user selected the proposed worker and retention policies. This record defines the scoped D08/D09 choices; it does not enable a live worker, email request endpoint, scheduling or external database cleanup. Implementation/acceptance evidence is recorded in IMPLEMENTATION_PLAN.md.
 
 ## Proposed processing contract
 

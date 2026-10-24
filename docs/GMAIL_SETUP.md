@@ -1,5 +1,13 @@
 # Local Gmail recovery delivery
 
+## Current checkpoint — October 24, 2026
+
+Local request HTTP admission, completion HTTP, opt-in UI transport and internal explicit worker composition now exist. All remain default-disabled; no SMTP verification/send, scheduler or Atlas migration was performed. The boolean-only local readiness check found the sender configured but the Gmail app password, queue key and blocklist path/checksum/source missing. See [PHASE_3_HANDOFF.md](PHASE_3_HANDOFF.md) for current activation/acceptance requirements; older task descriptions below record earlier boundaries.
+
+`AUTH_RECOVERY_REQUEST_HTTP=1` enables only encrypted request admission at POST `/api/v1/auth/password-reset-requests` and `/verification-requests`, with purpose challenges from `/api/v1/auth/recovery-challenge`. It returns HTTP 202 received=true after audit/intent commit and never promises delivery. `AUTH_RECOVERY_COMPLETION_HTTP=1` separately enables completion. `AUTH_RECOVERY_UI=1` requires both HTTP switches and local HTTPS. `AUTH_RECOVERY_WORKER=1` permits internal explicit runtime construction; only an explicit `worker.processOne` call processes a job. These settings are not enabled in local configuration by this checkpoint. No scheduler or external operator endpoint is installed.
+
+Run `npm run db:recovery:plan` for an offline storage plan. Reviewed apply/verify commands require explicit `-- --database <configured-name>` and already-verified infrastructure/auth storage. The updated auth contract also adds optional displayName and requires deliberate redeployment on existing databases. Do not apply to Atlas as part of manual acceptance without separate authorization.
+
 The user selected an external email provider and a Gmail sender on October 20, 2026. Task 3.4c.3a adds a standalone Gmail SMTP adapter; it does not activate recovery endpoints or change account eligibility. The existing synthetic recovery service retains its test-only guard.
 
 ## Configuration

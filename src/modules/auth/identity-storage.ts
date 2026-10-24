@@ -10,6 +10,7 @@ export const userValidator: mongo.Document = { $and: [{ $jsonSchema: {
     _id: { bsonType: "objectId" },
     normalizedEmail: { bsonType: "string", maxLength: 254, pattern: "^[^\\s@\\x00-\\x1f\\x7f]+@[^\\s@\\x00-\\x1f\\x7f]+$" },
     passwordHash: { bsonType: "string", maxLength: 128, pattern: PASSWORD_HASH_PATTERN }, verifiedAt: { bsonType: "date" },
+    displayName: { bsonType: "string", maxLength: 100 },
     status: { bsonType: "string", pattern: "^[a-z][a-z0-9_]{0,39}$" },
     sessionVersion: counter, authorizationVersion: counter, operationFence: counter,
     createdAt: { bsonType: "date" }, updatedAt: { bsonType: "date" },

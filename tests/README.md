@@ -1,5 +1,7 @@
 # Test boundaries
 
+October 24 Phase 3 checkpoint: 156 unit tests, 131 database integration tests and four HTTPS browser scenarios pass. The browser fixture additionally enables request admission with its own random queue key and disposable collection, verifies identical known/unknown receipts, and exercises profile save/refresh and responsive accessibility. It leaves completion/live UI disabled, uses synthetic recovery delivery, and never contacts Gmail. Profile integration tests cover self-only updates, sensitive-field rejection, revoked sessions and audit rollback. Earlier task descriptions below record historical fixture boundaries.
+
 - `unit/**/*.test.ts(x)`: Vitest with Node, explicit imports, per-file isolation and restored mocks. The current smoke test renders the real synchronous startup component and verifies the `@/` alias/TSX pipeline. No DOM library is needed yet.
 - `e2e/**/*.spec.ts`: Playwright with fresh browser contexts and Chromium. It builds and starts a production server on `127.0.0.1:3101`, refuses to reuse another process, and stops its server afterward. Keep that port free; stop development servers before this suite because both commands write `.next/`.
 

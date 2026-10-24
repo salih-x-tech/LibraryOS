@@ -61,3 +61,11 @@ Separate development/staging/production, credentials, Cloudinary scopes and emai
 ## Release verification
 
 Require tenant/branch/ownership denial tests, CSRF/XSS/injection cases, session revocation/recovery tests, concurrent integrity/quota tests, upload abuse tests, secret/dependency scanning and response/log redaction review. Verify platform access denial and a real restoration exercise. Close critical security/integrity findings before pilot; approval thresholds remain D09.
+
+## Phase 3 scoped review — October 24, 2026
+
+Request HTTP admission now commits encrypted intent/audit before HTTP 202 and never looks up users or initializes Gmail. Its local-only switch is independent of completion; strict Origin, purpose CSRF, bounded JSON and email-only fields apply. This establishes an account-independent execution path, not a statistical timing guarantee or proof of eventual delivery. Independent signing/limiter/encryption keys are required. Worker/runtime construction sends nothing; explicit processing can send and is gated separately. No timer, resend loop or public operator endpoint was added.
+
+Own-profile editing permits only optional displayName. It never accepts identity, email, password, status, version or role fields. Session/user guards serialize edits with revocation/reset; required audit rolls back together with the edit. Audit records omit the display-name value. Output is explicitly projected; React renders the name as text. Browser tests verify persistence/accessibility, and integration tests verify self-scope, revoked-session denial and audit rollback.
+
+This is a scoped implementation review with synthetic tests, not full release acceptance. Live Gmail/recipient acceptance, reviewed blocklist provenance and coverage, key/backup retention, real deployment readiness and operational cleanup execution remain outstanding. The local readiness check found those credential/list/key settings missing. See PHASE_3_HANDOFF.md. No Phase 4 capability or tenant authority was added.

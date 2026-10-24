@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 export type RecoveryMode = "reset-request" | "verification-request" | "reset-password" | "verify-email";
 const headings = { "reset-request": "Reset your password.", "verification-request": "Verify your email.", "reset-password": "Choose a new password.", "verify-email": "Confirm your email." };
 
-export function RecoveryPanel({ mode, enabled }: Readonly<{ mode: RecoveryMode; enabled: boolean }>) {
+export function RecoveryPanel({ mode, enabled, live = false }: Readonly<{ mode: RecoveryMode; enabled: boolean; live?: boolean }>) {
   const completion = mode === "reset-password" || mode === "verify-email";
+  const endpoint = live ? ({ "reset-request": "password-reset-requests", "verification-request": "verification-requests",
+    "reset-password": "reset-password", "verify-email": "verify-email" } as const)[mode] : mode;
   const token = useRef("");
   const pending = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -52,11 +54,11 @@ export function RecoveryPanel({ mode, enabled }: Readonly<{ mode: RecoveryMode; 
     try {
       if (completion && !/^[A-Za-z0-9_-]{43}$/.test(token.current)) throw new Error("This link is invalid or expired. Request a new link.");
       if (mode === "reset-password" && fields.get("password") !== fields.get("confirmation")) throw new Error("The passwords do not match.");
-      const challenge = await fetch(`/api/v1/auth/challenge?purpose=${mode}`, { cache: "no-store" });
+      const challenge = await fetch(`/api/v1/auth/${live ? "recovery-challenge" : "challenge"}?purpose=${mode}`, { cache: "no-store" });
       if (!challenge.ok) throw new Error("Recovery is unavailable. Please try again later.");
       const csrf = (await challenge.json()).data.csrfToken;
       const body = completion ? { token: token.current, ...(mode === "reset-password" ? { password: fields.get("password") } : {}) } : { email: fields.get("email") };
-      const response = await fetch(`/api/v1/auth/${mode}`, { method: "POST", headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf }, body: JSON.stringify(body) });
+      const response = await fetch(`/api/v1/auth/${endpoint}`, { method: "POST", headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf }, body: JSON.stringify(body) });
       if (response.status === 429) {
         const seconds = Number(response.headers.get("Retry-After"));
         throw new Error(Number.isSafeInteger(seconds) && seconds > 0 ? `Too many attempts. Try again in ${seconds} seconds.` : "Too many attempts. Try again later.");
@@ -68,7 +70,7 @@ export function RecoveryPanel({ mode, enabled }: Readonly<{ mode: RecoveryMode; 
       form.reset(); setDone(true);
       if (completion) token.current = "";
       setNotice(completion ? (mode === "reset-password" ? "Your password has been reset. Sign in with your new password." : "Your email has been verified. You can now sign in.")
-        : "If the account is eligible, a link will be delivered. Check your delivery channel.");
+        : live ? "Your request has been received. If your account is eligible, you may receive a link." : "If the account is eligible, a link will be delivered. Check your delivery channel.");
     } catch (cause) {
       failed = true;
       setError(cause instanceof Error && cause.name === "Error" ? cause.message : "Could not connect. Check your connection and try again.");
@@ -89,7 +91,7 @@ export function RecoveryPanel({ mode, enabled }: Readonly<{ mode: RecoveryMode; 
       <p className="auth-description">{completion ? "Use the secure link delivered for your account." : "Enter your account email to request a secure link."}</p>
       <p role="status">{busy ? "Please wait…" : notice}</p>
       <p ref={feedback} role="alert" tabIndex={-1} className={error ? "auth-error" : undefined}>{error}</p>
-      {!done && <form method="post" action={`/api/v1/auth/${mode}`} onSubmit={(event) => { void act(event); }} aria-busy={busy}>
+      {!done && <form method="post" action={`/api/v1/auth/${endpoint}`} onSubmit={(event) => { void act(event); }} aria-busy={busy}>
         <fieldset disabled={busy} className="auth-fields">
           {!completion && <><label htmlFor="recovery-email">Email address</label><input id="recovery-email" name="email" type="email" required autoComplete="email" maxLength={254} autoCapitalize="none" spellCheck={false} /></>}
           {mode === "reset-password" && <>

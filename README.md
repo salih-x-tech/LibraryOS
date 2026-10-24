@@ -90,4 +90,4 @@ Vitest and Playwright provide unit, database integration and browser checks. Bro
 - [Next.js installation](https://nextjs.org/docs/app/getting-started/installation)
 - [Next.js ESLint configuration](https://nextjs.org/docs/app/api-reference/config/eslint)
 
-Work one task at a time. We are in Phase 3, Task 3.4: activation/recovery integration. Task 3.3 local login/logout is complete; recovery request HTTP admission and controlled live acceptance remain pending. Task 3.5 and Phase 4 have not started. Local test acceptance is not production/security release acceptance. The user authorized committing and pushing each completed task on October 20, 2026; deployment remains separate.
+We remain in Phase 3. Local recovery request HTTP admission and Task 3.5 display-name profile editing are implemented; controlled live recovery acceptance remains pending. Phase 4 has not started. See [the manual handoff](docs/PHASE_3_HANDOFF.md) for completed work, missing local prerequisites and exact remaining acceptance steps. Local tests do not constitute production/security release acceptance. The user authorized committing and pushing completed work; deployment remains separate.

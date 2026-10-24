@@ -18,6 +18,7 @@ import { SESSION_COOKIE_NAME } from "@/modules/auth/session-format";
 import { AUTH_CHALLENGE_COOKIE_NAME } from "@/server/security/auth-csrf";
 import { createAuthCsrfProtection, type AuthPurpose } from "@/server/security/auth-csrf";
 import { deployActionTokens } from "../../../scripts/db/action-tokens";
+import { deployRecoveryRequests } from "../../../scripts/db/recovery-requests";
 import { createTestRecoveryService } from "@/modules/auth/recovery-service";
 import { createMongoRateLimiter } from "@/server/security/rate-limit";
 import { createRequestContext, errorResponse } from "@/server/http/responses";
@@ -62,6 +63,7 @@ beforeAll(async () => {
   await deployInfrastructure(connection);
   await deployAuthStorage(connection);
   await deployActionTokens(connection);
+  await deployRecoveryRequests(connection);
   await getUserModel(connection).create({ normalizedEmail: email, passwordHash: await hashPassword(password),
     status: "active", verifiedAt: new Date(), sessionVersion: 0, authorizationVersion: 0, operationFence: 0 });
   await getUserModel(connection).create({ normalizedEmail: "ui-fixture@example.com", passwordHash: await hashPassword(password),
@@ -79,7 +81,8 @@ beforeAll(async () => {
     "--experimental-https-cert", resolve(".local/https/localhost-cert.pem")], {
     env: { ...process.env, NODE_ENV: "development", LIBRARYOS_LOCAL_HTTPS: "1", AUTH_ORIGIN: origin,
       AUTH_CSRF_KEY: randomBytes(32).toString("hex"), AUTH_RATE_LIMIT_KEY: randomBytes(32).toString("hex"),
-      MONGODB_URI: fixture.uri, MONGODB_DB_NAME: fixture.databaseName, LIBRARYOS_SYNTHETIC_RECOVERY_UI: "1", AUTH_RECOVERY_COMPLETION_HTTP: "" },
+      MONGODB_URI: fixture.uri, MONGODB_DB_NAME: fixture.databaseName, LIBRARYOS_SYNTHETIC_RECOVERY_UI: "1", AUTH_RECOVERY_COMPLETION_HTTP: "",
+      AUTH_RECOVERY_REQUEST_HTTP: "1", AUTH_RECOVERY_QUEUE_KEY: randomBytes(32).toString("hex"), AUTH_RECOVERY_UI: "" },
     windowsHide: true, stdio: "ignore",
   });
   await ready();
@@ -277,6 +280,42 @@ it("exercises recovery UI with synthetic in-memory transport, fragment cleanup a
     // APIRequest bypasses browser routing: prove that the app exposes no real
     // recovery mutation even while synthetic UI is enabled in this fixture.
     expect((await context.request.post(`${origin}/api/v1/auth/reset-password`, { data: {} })).status()).toBe(503);
+  } finally { await context.close(); }
+}, 120_000);
+
+it("admits recovery over actual HTTPS without delivery and supports safe profile edits", async () => {
+  const context = await browser!.newContext({ ignoreHTTPSErrors: true });
+  try {
+    const page = await context.newPage(); await page.goto(origin);
+    const receipts = await page.evaluate(async () => {
+      const results = [];
+      for (const email of ["browser-fixture@example.com", "unknown-request@example.com"]) {
+        const challenge = await fetch("/api/v1/auth/recovery-challenge?purpose=reset-request");
+        const csrf = (await challenge.json()).data.csrfToken;
+        const response = await fetch("/api/v1/auth/password-reset-requests", { method: "POST", headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf }, body: JSON.stringify({ email }) });
+        results.push({ status: response.status, data: (await response.json()).data });
+      }
+      return results;
+    });
+    expect(receipts).toEqual([{ status: 202, data: { received: true } }, { status: 202, data: { received: true } }]);
+    const db = (await fixture.manager.get()).db!;
+    expect(await db.collection("authRecoveryRequests").countDocuments({ status: "pending" })).toBe(2);
+    await page.goto(`${origin}/login`);
+    await page.getByLabel("Email address").fill("ui-fixture@example.com");
+    await page.getByLabel("Password", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await browserExpect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible();
+    await page.getByRole("link", { name: "Edit your profile" }).click();
+    await page.getByLabel("Display name").fill("Browser Reader");
+    await page.getByRole("button", { name: "Save profile" }).click();
+    await browserExpect(page.getByRole("status")).toContainText("Your profile has been saved.");
+    await page.reload(); await browserExpect(page.getByLabel("Display name")).toHaveValue("Browser Reader");
+    for (const width of [320, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+    }
+    expect(await db.collection("auditEvents").countDocuments({ action: "auth.profileUpdated" })).toBe(1);
   } finally { await context.close(); }
 }, 120_000);
 

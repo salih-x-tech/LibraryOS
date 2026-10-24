@@ -24,7 +24,7 @@ Every tenant endpoint additionally enforces active membership, organization stat
 | POST /auth/login; POST /auth/logout | credentials/set cookie; revoke/clear cookie | Public limited / current session |
 | POST /auth/verification-requests; /auth/password-reset-requests | email; generic response | Public, limited |
 | POST /auth/verify-email; /auth/reset-password | single-use token and required fields | Valid token |
-| GET /me; PATCH /me | own account / safe profile fields | Self; sensitive changes require reauthentication |
+| GET /me; PATCH /me | own account / optional displayName only | Self; PATCH requires session-bound CSRF; email/password/privilege edits rejected |
 | GET /me/organizations | workspace memberships | Self |
 | POST /organizations | name/slug; atomic Owner and Free subscription | Eligible authenticated user; creation policy D09 |
 | GET T; PATCH T | workspace / settings | organization.read/update |

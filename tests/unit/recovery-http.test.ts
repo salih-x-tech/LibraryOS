@@ -3,14 +3,59 @@ import { NextRequest } from "next/server";
 import { ApplicationError, RateLimitError } from "@/server/http/errors";
 import { createActionToken } from "@/modules/auth/action-token-format";
 const mocks = vi.hoisted(() => ({ get: vi.fn(), complete: vi.fn() }));
+const queue = vi.hoisted(() => ({ get: vi.fn(), enqueue: vi.fn() }));
+vi.mock("@/server/recovery-request-runtime", () => ({ getLocalRecoveryRequestQueue: queue.get }));
 vi.mock("@/server/recovery-runtime", () => ({ getLocalRecoveryService: mocks.get }));
-import { recoveryChallenge, recoveryCompletion } from "@/server/recovery-http";
+import { recoveryChallenge, recoveryCompletion, recoveryRequest } from "@/server/recovery-http";
 const origin = "https://127.0.0.1:3000";
 beforeEach(() => {
   vi.stubEnv("NODE_ENV", "development"); vi.stubEnv("LIBRARYOS_LOCAL_HTTPS", "1");
   vi.stubEnv("AUTH_ORIGIN", origin); vi.stubEnv("AUTH_CSRF_KEY", "ab".repeat(32)); vi.stubEnv("AUTH_RATE_LIMIT_KEY", "cd".repeat(32));
   vi.stubEnv("AUTH_RECOVERY_COMPLETION_HTTP", "1");
+  vi.stubEnv("AUTH_RECOVERY_REQUEST_HTTP", "1");
+  queue.get.mockReset().mockResolvedValue({ enqueue: queue.enqueue }); queue.enqueue.mockReset().mockResolvedValue(undefined);
   mocks.get.mockReset().mockResolvedValue({ complete: mocks.complete }); mocks.complete.mockReset().mockResolvedValue(undefined);
+});
+
+async function admissionChallenge(purpose = "reset-request") {
+  const response = await recoveryChallenge(new NextRequest(`${origin}/api/v1/auth/recovery-challenge?purpose=${purpose}`,
+    { headers: { "Sec-Fetch-Site": "same-origin" } }));
+  expect(response.status).toBe(200);
+  return { nonce: response.headers.get("set-cookie")!.split(";")[0]!, csrf: (await response.json()).data.csrfToken };
+}
+it("admits only a normalized email and returns a generic receipt without initializing delivery", async () => {
+  const { nonce, csrf } = await admissionChallenge();
+  const response = await recoveryRequest(request(nonce, csrf, JSON.stringify({ email: " Person@Example.com " }),
+    { "X-Forwarded-For": "8.8.8.8" }), "reset-password");
+  expect(response.status).toBe(202);
+  expect((await response.json()).data).toEqual({ received: true });
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  expect(queue.enqueue).toHaveBeenCalledWith("reset-password", "person@example.com", "127.0.0.1", expect.any(Object));
+  expect(mocks.get).not.toHaveBeenCalled();
+});
+it("rejects admission authority fields, oversized bodies and completion challenges before queue access", async () => {
+  const { nonce, csrf } = await admissionChallenge();
+  for (const body of ["{", "x".repeat(16_385), JSON.stringify({ email: "person@example.com", role: "Owner" })]) {
+    expect((await recoveryRequest(request(nonce, csrf, body), "reset-password")).status).toBe(400);
+  }
+  expect((await recoveryRequest(request(nonce, csrf, JSON.stringify({ email: "invalid" })), "reset-password")).status).toBe(422);
+  const completion = await challenge();
+  expect((await recoveryRequest(request(completion.nonce, completion.csrf, JSON.stringify({ email: "person@example.com" })), "reset-password")).status).toBe(403);
+  expect(queue.get).not.toHaveBeenCalled();
+});
+it("keeps admission independently disabled and refuses production", async () => {
+  vi.stubEnv("AUTH_RECOVERY_REQUEST_HTTP", "");
+  expect((await recoveryRequest(request("", "", "{}"), "reset-password")).status).toBe(503);
+  vi.stubEnv("AUTH_RECOVERY_REQUEST_HTTP", "1"); vi.stubEnv("NODE_ENV", "production");
+  expect((await recoveryRequest(request("", "", "{}"), "reset-password")).status).toBe(503);
+  expect(queue.get).not.toHaveBeenCalled();
+});
+it("preserves cookies on failed admission and reports shared limiter retry metadata", async () => {
+  const { nonce, csrf } = await admissionChallenge("verification-request");
+  queue.enqueue.mockRejectedValueOnce(new RateLimitError(15));
+  const response = await recoveryRequest(request(nonce, csrf, JSON.stringify({ email: "person@example.com" })), "verify-email");
+  expect(response.status).toBe(429); expect(response.headers.get("retry-after")).toBe("15");
+  expect(response.headers.get("set-cookie")).toBeNull();
 });
 afterEach(() => vi.unstubAllEnvs());
 async function challenge(purpose: "reset-password" | "verify-email" = "reset-password") {

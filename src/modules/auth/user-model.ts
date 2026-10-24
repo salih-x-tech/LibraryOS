@@ -13,6 +13,7 @@ const schema = new Schema({
   },
   // Only hashing services may supply this field. Public queries omit it.
   passwordHash: { type: String, required: true, select: false, validate: isSupportedPasswordHash },
+  displayName: { type: String, maxlength: 100 },
   verifiedAt: Date,
   // No activation/status default while D02 remains unapproved. Future services
   // must explicitly allow approved states; a stored status is not access proof.

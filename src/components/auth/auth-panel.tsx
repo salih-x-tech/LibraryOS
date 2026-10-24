@@ -80,6 +80,7 @@ export function AuthPanel({ initialState, hasSessionCookie }: Readonly<{ initial
       <Button type="submit" variant="outline" disabled={busy}>{state === "signed-in" ? "Sign out" : "Sign out of this browser"}</Button>
     </form>}
     <p id="account-help" className="auth-help">Need account access or password help? Contact your library. Online registration and password recovery are not available yet.</p>
+    {state === "signed-in" && <p><Link href="/account" className="text-link">Edit your profile</Link></p>}
     <Link href="/" className="text-link">Back to the workspace preview</Link>
   </section>;
 }

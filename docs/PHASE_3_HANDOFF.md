@@ -12,12 +12,24 @@ Phase 4 has not started. Phase 3 code now includes local recovery request admiss
 
 ## Readiness check and remaining acceptance
 
-The user authorized a local readiness check **without sending email**. Only boolean readiness results were printed. In `.env.local`, the sender address exists; `GMAIL_APP_PASSWORD`, `AUTH_RECOVERY_QUEUE_KEY`, `AUTH_PASSWORD_BLOCKLIST_PATH`, `AUTH_PASSWORD_BLOCKLIST_SHA256` and `AUTH_PASSWORD_BLOCKLIST_SOURCE` are absent/empty. Other secret stores were not inspected. No SMTP authentication was attempted.
+The user authorized a local readiness check **without sending email**. Only boolean readiness results were printed. As of November 6, 2026, the following `.env.local` credentials are now configured:
+
+- ✅ `GMAIL_USER` — set (`codedreamer021@gmail.com`)
+- ✅ `GMAIL_SENDER_NAME` — set
+- ✅ `GMAIL_APP_PASSWORD` — set (16-character app password, no spaces)
+- ✅ `AUTH_RECOVERY_QUEUE_KEY` — set (64-hex-character key)
+- ✅ `AUTH_PASSWORD_BLOCKLIST_PATH` — set (points to `.local/blocklists/libraryos-local-v1.txt`)
+- ✅ `AUTH_PASSWORD_BLOCKLIST_SHA256` — set (pinned checksum)
+- ✅ `AUTH_PASSWORD_BLOCKLIST_SOURCE` — set (SecLists provenance documented)
+- ✅ `MONGODB_URI` / `MONGODB_DB_NAME` — set (Atlas cluster active)
+- ✅ Auth and recovery schemas verified deployed (`npm run db:auth:verify` and `npm run db:recovery:verify` both passed)
+
+**No SMTP authentication or live email send has been attempted yet.** All secret stores were configured locally but not exercised end-to-end.
 
 Before full Phase 3 acceptance:
 
-1. Configure the Gmail app password locally. Supply and review a real password blocklist's provenance, license, coverage and refresh policy; pin its exact byte checksum. Synthetic fixture lists are not release evidence.
-2. Configure an independent queue encryption key and document backup/key retention. Restart after configuration/key/list changes; runtimes cache successful initialization.
+1. ~~Configure the Gmail app password locally.~~ ✅ Done. ~~Supply and review a real password blocklist's provenance, license, coverage and refresh policy; pin its exact byte checksum.~~ ✅ Done.
+2. ~~Configure an independent queue encryption key and document backup/key retention.~~ ✅ Done. Restart after configuration/key/list changes; runtimes cache successful initialization.
 3. Review and explicitly deploy the updated auth validator (optional display name), action tokens and recovery queue to the selected local database. Existing deployments fail readiness until their contracts match. Atlas changes remain separately authorized work.
 4. Review recipient/synthetic account and cleanup scope, then explicitly authorize a controlled live send. Exercise request, explicit worker invocation, actual received link, verification/reset, replay rejection, old-session invalidation and new-password login. Record provider acceptance and inbox receipt separately.
 5. Review lifecycle execution and operational ownership before allowing live requests to accumulate. No scheduler is activated by this checkpoint.

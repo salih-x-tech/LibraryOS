@@ -280,7 +280,7 @@ Atlas connectivity/credentials and production deployment were not exercised or p
               - [x] 3.4c.3b.4b.2a Explicit one-job delivery worker with transactional issuance guard, pre-send lease recheck and no-resend failure handling; mocked mail acceptance.
               - [ ] 3.4c.3b.4b.2b Local request HTTP admission/runtime wiring and controlled activation; live credentials/list/key acceptance and scheduling still gated.
                 - [x] Local request HTTP/runtime/UI wiring, explicit internal worker composition and synthetic HTTPS admission acceptance (October 24).
-                - [ ] Controlled live recovery acceptance; local readiness check found missing app password, blocklist settings and queue key. No email send authorized this checkpoint.
+                - [ ] Controlled live recovery acceptance; Gmail app password, blocklist and queue key are now configured locally (November 6, 2026). Auth/recovery schemas verified deployed. Remaining: create test user, start dev server, send live password-reset email, verify receipt, exercise reset flow, confirm old-session revocation, and record evidence.
 - [x] 3.5 Add own-profile edits and authentication security review (display name only; local evidence and remaining release gates in PHASE_3_HANDOFF.md).
 
 ## Phase 4 — Organizations and memberships

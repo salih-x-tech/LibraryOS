@@ -909,3 +909,17 @@ Validation: all 156 unit tests, all 131 database integration tests, and all four
 Scoped authentication security review covered exact Origin/JSON and purpose/session CSRF binding, bounded bodies, exact input/DTO allowlists, account-independent admission/provider separation, hash-only tokens, lease ownership/no resend, profile self-scope, logout/reset serialization and mandatory audit rollback. Tests support these properties; this is not a production audit, timing-conformance certification or Phase 13 sign-off. Existing dependency/hosting/blocklist/operations release gates remain.
 
 The user requested readiness inspection without email. Boolean-only inspection of ignored .env.local found sender configured, but no Gmail app password, queue key or password-blocklist path/checksum/source. No SMTP verification or send, scheduler, real database deployment or Atlas change occurred. Task 3.5 local implementation/review is complete; Task 3.4 and the full Phase 3 acceptance checkbox remain open for actual controlled live acceptance. PHASE_3_HANDOFF.md records remaining prerequisites and manual continuation. Phase 4 remains untouched.
+
+### Task 3.4 controlled local live verification acceptance — November 12, 2026
+
+Controlled local live recovery verification was performed on November 12, 2026.
+
+- A one-time worker run processed the authorized reset-password request. The account was still pending email verification, so the request was ineligible. It was finalized as completed without creating an action token or sending a reset email.
+- A separate, explicitly authorized one-time worker run processed the pending verify-email request. The request completed and one action token was created.
+- The verification email was received. The user opened its link, and the application displayed: "your email has been verified".
+- Both one-time integration acceptance runners passed. Their temporary test files were removed after execution.
+- No permanent worker, scheduler, automatic retry, or background polling was enabled.
+
+This accepts the controlled local email-verification branch only. Password-reset live acceptance—including successful reset, replay rejection, old-session invalidation, and new-password login—remains outstanding. Lifecycle execution ownership and broader release gates also remain open.
+
+Phase 4 has not started.

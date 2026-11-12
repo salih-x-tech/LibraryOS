@@ -1,6 +1,18 @@
 # Local Gmail recovery delivery
 
-## Current checkpoint — October 24, 2026
+## Current checkpoint — November 12, 2026
+
+This checkpoint supersedes the October 24 status.
+
+- SMTP readiness was checked during the controlled one-time worker runs.
+- The reset-password request was ineligible because the account was pending email verification. It completed without a reset token or reset email.
+- The verify-email request completed and created one action token. The user received the verification email, redeemed its link, and saw the application's successful verification message.
+- No automatic resend, retry, scheduler, permanent worker, or hosted operator endpoint was enabled.
+- The temporary one-time test runner files were removed.
+
+This confirms the local email-verification path only. It does not establish successful password-reset delivery or full Phase 3 acceptance.
+
+## Historical checkpoint — October 24, 2026
 
 Local request HTTP admission, completion HTTP, opt-in UI transport and internal explicit worker composition now exist. All remain default-disabled; no SMTP verification/send, scheduler or Atlas migration was performed. The boolean-only local readiness check found the sender configured but the Gmail app password, queue key and blocklist path/checksum/source missing. See [PHASE_3_HANDOFF.md](PHASE_3_HANDOFF.md) for current activation/acceptance requirements; older task descriptions below record earlier boundaries.
 

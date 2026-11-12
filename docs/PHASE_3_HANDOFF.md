@@ -1,4 +1,18 @@
-# Phase 3 manual handoff — October 24, 2026
+# Phase 3 manual handoff
+
+## Current checkpoint — November 12, 2026
+
+This checkpoint supersedes the October 24 status below.
+
+- Local SMTP readiness was checked during the controlled worker runs.
+- The authorized verify-email request completed. The email was received, its link was redeemed, and the application confirmed successful email verification.
+- The reset-password request was ineligible because the account was still pending verification. It was finalized without sending a reset email or creating a reset token.
+- These were explicit one-job runs only. Temporary runners were removed.
+- No permanent worker, scheduler, automatic retry, or production recovery ingress was enabled.
+
+**Still outstanding:** live password-reset acceptance, replay rejection, old-session invalidation, new-password login, and documented operational ownership for lifecycle processing. Phase 3 is not fully accepted, and Phase 4 has not started.
+
+## Historical checkpoint — October 24, 2026
 
 Phase 4 has not started. Phase 3 code now includes local recovery request admission and display-name profile editing. **Phase 3 live recovery acceptance is still incomplete.** Do not mark the phase fully accepted or enable real delivery from synthetic evidence.
 
